@@ -22,7 +22,8 @@
     min-height: 100vh;
     color: #e8e8f0;
     position: relative;
-    transition: padding 0.2s;
+    transition: padding 0.2s, background 0.3s;
+    overflow: hidden;
   }
   
   h1.title {
@@ -113,6 +114,15 @@
     margin-top: 10px;
   }
   .big-btn:hover { transform: scale(1.05); }
+
+  #winStatsText {
+    color: var(--neon-cyan);
+    font-weight: bold;
+    font-size: 15px;
+    letter-spacing: 2px;
+    margin-top: 10px;
+    text-shadow: 0 0 8px rgba(77,252,255,0.5);
+  }
   
   .controls-hint {
     margin-top: 14px;
@@ -123,48 +133,86 @@
     line-height: 1.6;
   }
   .controls-hint b { color: #9a9ac0; }
-  .top-hints { position:absolute; top:10px; right:14px; color:#4a4a68; font-size:11px; letter-spacing:1px; text-align:right; }
+  .top-hints { position:absolute; top:10px; right:14px; color:#4a4a68; font-size:11px; letter-spacing:1px; text-align:right; z-index: 20;}
+
+  /* -- Countdown Animation -- */
+  @keyframes pulseCount {
+    0% { transform: scale(0.8); opacity: 0; }
+    20% { transform: scale(1.1); opacity: 1; }
+    80% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0; }
+  }
+  #countdownText {
+    font-size: 120px;
+    color: var(--neon-yellow);
+    text-shadow: 0 0 20px var(--neon-yellow), 0 0 40px rgba(255,249,77,0.5);
+    margin: 0;
+  }
+  .animate-pulse {
+    animation: pulseCount 1s ease-in-out;
+  }
 
   /* --- Fullscreen Mode Styles --- */
-  body.is-fullscreen {
-    padding: 0;
-    background: #000;
-  }
-  body.is-fullscreen .title,
-  body.is-fullscreen .subtitle,
-  body.is-fullscreen .controls-hint,
-  body.is-fullscreen .top-hints {
-    display: none; 
-  }
-  body.is-fullscreen .game-wrap {
-    width: 100vw;
-    height: 100vh;
-    max-width: none;
-  }
-  body.is-fullscreen canvas {
-    border-radius: 0;
-    border: none;
-    width: 100%;
-    height: 100%;
-  }
-  body.is-fullscreen .overlay {
-    border-radius: 0;
+  body.is-fullscreen { padding: 0; background: #000; }
+  body.is-fullscreen .title, body.is-fullscreen .subtitle,
+  body.is-fullscreen .controls-hint, body.is-fullscreen .top-hints { display: none; }
+  body.is-fullscreen .game-wrap { width: 100vw; height: 100vh; max-width: none; }
+  body.is-fullscreen canvas { border-radius: 0; border: none; width: 100%; height: 100%; }
+  body.is-fullscreen .overlay { border-radius: 0; }
+
+  /* --- EXTREME LEGACY MODE STYLES --- */
+  @keyframes crtFlicker {
+    0% { opacity: 0.92; }
+    5% { opacity: 0.85; }
+    10% { opacity: 0.95; }
+    15% { opacity: 1; }
+    50% { opacity: 0.98; }
+    90% { opacity: 0.94; }
+    100% { opacity: 1; }
   }
 
-  /* --- Legacy Mode Styles --- */
-  body.legacy-mode { background: #000; color: #e8e8f0; }
+  @keyframes crtRoll {
+    0% { top: -20%; height: 10%; opacity: 0.05; }
+    50% { opacity: 0.12; }
+    100% { top: 120%; height: 20%; opacity: 0.05; }
+  }
+
+  body.legacy-mode { background: #050505; color: #e8e8f0; }
   body.legacy-mode * { text-shadow: none !important; box-shadow: none !important; }
   body.legacy-mode h1.title { color: #e8e8f0; }
   body.legacy-mode .subtitle { color: #888; }
+  
   body.legacy-mode canvas {
-    background: #000;
-    border: 3px solid #FFF;
+    background: #020202;
+    border: 4px solid #b3b3b3;
+    border-radius: 20px;
     image-rendering: pixelated; 
     image-rendering: crisp-edges;
+    /* Blur ridotto per restituire definizione alle barre */
+    filter: contrast(1.4) brightness(1.2) sepia(0.3) blur(0.2px);
+    animation: crtFlicker 0.12s infinite;
   }
-  body.is-fullscreen.legacy-mode canvas { border: none; }
-  body.legacy-mode .overlay { background: rgba(0,0,0,0.96); }
-  body.legacy-mode .overlay h2 { color: #e8e8f0; }
+  
+  body.is-fullscreen.legacy-mode canvas { border: none; border-radius: 0; }
+
+  body.legacy-mode .game-wrap::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
+                radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.85) 100%);
+    background-size: 100% 4px, 100% 100%;
+    box-shadow: inset 0 0 80px rgba(0,0,0,0.9);
+    border-radius: 20px;
+  }
+  body.is-fullscreen.legacy-mode .game-wrap::after { border-radius: 0; }
+
+  body.legacy-mode .game-wrap::before {
+    content: ""; position: absolute; left: 0; right: 0;
+    background: rgba(255, 255, 255, 0.15); z-index: 4; pointer-events: none;
+    animation: crtRoll 8s linear infinite;
+  }
+
+  body.legacy-mode .overlay { background: rgba(0,0,0,0.96); z-index: 10; }
+  body.legacy-mode .overlay h2, body.legacy-mode #countdownText, body.legacy-mode #winStatsText { color: #e8e8f0; }
   body.legacy-mode .overlay p { color: #ccc; }
   body.legacy-mode .top-hints { display: none; }
 </style>
@@ -182,37 +230,38 @@
     <h2>SCEGLI LA TUA SFIDA</h2>
     <p>Primo a 7 punti vince. Muovi la racchetta per intercettare la pallina: più la colpisci ai bordi, più l'angolo si fa imprevedibile.</p>
 
-    <!-- Display Row -->
     <div class="opt-row" id="displayRow">
       <button class="opt-btn selected" id="btnWindow" onclick="setDisplay('window')">FINESTRA</button>
       <button class="opt-btn" id="btnFullscreen" onclick="setDisplay('fullscreen')">SCHERMO INTERO (F)</button>
     </div>
 
-    <!-- Mode Row -->
     <div class="opt-row" id="modeRow">
       <button class="opt-btn selected" data-mode="cpu" onclick="selectMode('cpu')">1 GIOCATORE (vs CPU)</button>
       <button class="opt-btn" data-mode="2p" onclick="selectMode('2p')">2 GIOCATORI</button>
     </div>
 
-    <!-- Diff Row -->
     <div class="opt-row" id="diffRow">
       <button class="opt-btn" data-diff="easy" onclick="selectDiff('easy')">FACILE</button>
       <button class="opt-btn selected" data-diff="normal" onclick="selectDiff('normal')">NORMALE</button>
       <button class="opt-btn" data-diff="hard" onclick="selectDiff('hard')">DIFFICILE</button>
     </div>
 
-    <!-- Legacy Row -->
     <div class="opt-row" id="legacyRow">
       <button class="opt-btn selected" data-legacy="off" onclick="toggleLegacy(false)">MODO NEON</button>
-      <button class="opt-btn" data-legacy="on" onclick="toggleLegacy(true)">MODO LEGACY (CRT)</button>
+      <button class="opt-btn" data-legacy="on" onclick="toggleLegacy(true)">MODO LEGACY EXTREME</button>
     </div>
 
     <button class="big-btn" onclick="startGame()">▶ GIOCA</button>
   </div>
 
+  <div class="overlay hidden" id="countdownScreen" style="background: rgba(5,5,10,0.7);">
+    <h2 id="countdownText">3</h2>
+  </div>
+
   <div class="overlay hidden" id="winScreen">
     <h2 id="winTitle">VITTORIA!</h2>
     <p id="winText"></p>
+    <p id="winStatsText"></p>
     <button class="big-btn" onclick="backToMenu()">MENU</button>
   </div>
 
@@ -250,6 +299,9 @@ let difficulty = 'normal';
 let running = false;
 let paused = false;
 
+let totalWinsLeft = 0;
+let totalWinsRight = 0;
+
 const WIN_SCORE = 7;
 
 let leftPaddle, rightPaddle, ball, keys, scoreLeft, scoreRight, trail;
@@ -278,12 +330,11 @@ function resizeCanvas() {
     if (ball.x < ball.r) ball.x = ball.r;
   }
   
-  // Guard aggiunto per prevenire il crash iniziale ("undefined")
   if (!running && typeof scoreLeft !== 'undefined') draw();
 }
 
 function updateScalingFactor(){
-  S = isLegacyMode ? 0.5 : 1;
+  S = isLegacyMode ? 0.45 : 1;
   canvas.width = BASE_W * S;
   canvas.height = BASE_H * S;
   W = canvas.width;
@@ -322,6 +373,7 @@ let audioCtx = null;
 function beep(freq, duration, vol){
   try{
     if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = 'square';
@@ -339,6 +391,9 @@ function sfxScore(){ beep(90, 0.35, 0.08); }
 
 function selectMode(m){
   mode = m;
+  totalWinsLeft = 0;
+  totalWinsRight = 0;
+  
   document.querySelectorAll('#modeRow .opt-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === m));
   document.getElementById('diffRow').style.display = (m === 'cpu') ? 'flex' : 'none';
   document.getElementById('controlsHint').innerHTML = (m === 'cpu')
@@ -384,9 +439,41 @@ function startGame(){
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('winScreen').classList.add('hidden');
   resetEntities(); 
-  running = true;
-  paused = false;
-  requestAnimationFrame(loop);
+  draw(); 
+  startCountdown();
+}
+
+function startCountdown() {
+  const cdScreen = document.getElementById('countdownScreen');
+  const cdText = document.getElementById('countdownText');
+  cdScreen.classList.remove('hidden');
+  
+  let count = 3;
+  
+  function updateCountdown() {
+    cdText.classList.remove('animate-pulse');
+    void cdText.offsetWidth; 
+    cdText.classList.add('animate-pulse');
+    
+    if (count > 0) {
+      cdText.textContent = count;
+      beep(440, 0.1, 0.1);
+      count--;
+      setTimeout(updateCountdown, 1000);
+    } else if (count === 0) {
+      cdText.textContent = "VIA!";
+      beep(880, 0.2, 0.1);
+      count--;
+      setTimeout(updateCountdown, 1000);
+    } else {
+      cdScreen.classList.add('hidden');
+      running = true;
+      paused = false;
+      requestAnimationFrame(loop);
+    }
+  }
+  
+  updateCountdown();
 }
 
 function backToMenu(){
@@ -500,10 +587,20 @@ function checkWin(){
   if(scoreLeft >= WIN_SCORE || scoreRight >= WIN_SCORE){
     running = false;
     const leftWon = scoreLeft >= WIN_SCORE;
+    
+    if(leftWon) totalWinsLeft++;
+    else totalWinsRight++;
+    
     document.getElementById('winTitle').textContent = (mode === 'cpu')
       ? (leftWon ? 'HAI VINTO!' : 'HA VINTO LA CPU')
       : (leftWon ? 'VINCE IL GIOCATORE SINISTRO' : 'VINCE IL GIOCATORE DESTRO');
+      
     document.getElementById('winText').textContent = `Punteggio finale: ${scoreLeft} - ${scoreRight}`;
+    
+    const p1Label = (mode === 'cpu') ? 'GIOCATORE' : 'P1';
+    const p2Label = (mode === 'cpu') ? 'CPU' : 'P2';
+    document.getElementById('winStatsText').textContent = `Vittorie totali: ${p1Label} [ ${totalWinsLeft} ] - [ ${totalWinsRight} ] ${p2Label}`;
+    
     document.getElementById('winScreen').classList.remove('hidden');
   }
 }
@@ -512,8 +609,14 @@ function draw(){
   if(!isLegacyMode){
     ctx.clearRect(0, 0, W, H);
   } else {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
+    // Opacità aumentata (0.2) per accorciare e rendere meno marcata la scia
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
     ctx.fillRect(0, 0, W, H);
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    for(let i=0; i<40; i++) {
+        ctx.fillRect(Math.random()*W, Math.random()*H, 2, 2);
+    }
   }
 
   if(!isLegacyMode){
@@ -534,9 +637,11 @@ function draw(){
     ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
     ctx.setLineDash([]);
   } else {
-    ctx.strokeStyle = '#e8e8f0';
-    ctx.lineWidth = 1; 
-    ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+    drawLegacyElement(() => {
+        ctx.strokeStyle = '#e8e8f0';
+        ctx.lineWidth = 1; 
+        ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+    });
   }
 
   const scoreFontSize = 48 * S;
@@ -554,9 +659,10 @@ function draw(){
     ctx.fillText(scoreRight, W/2 + scoreTextOffsetX, scoreTextOffsetY);
     ctx.shadowBlur = 0;
   } else {
-    ctx.fillStyle = COLORS.white;
-    ctx.fillText(scoreLeft, W/2 - scoreTextOffsetX, scoreTextOffsetY);
-    ctx.fillText(scoreRight, W/2 + scoreTextOffsetX, scoreTextOffsetY);
+    drawLegacyElement(() => {
+        ctx.fillText(scoreLeft, W/2 - scoreTextOffsetX, scoreTextOffsetY);
+        ctx.fillText(scoreRight, W/2 + scoreTextOffsetX, scoreTextOffsetY);
+    });
   }
 
   if(!isLegacyMode){
@@ -573,51 +679,58 @@ function draw(){
     drawPaddle(leftPaddle, COLORS.cyan);
     drawPaddle(rightPaddle, COLORS.pink);
   } else {
-    drawPaddle(leftPaddle, COLORS.white);
-    drawPaddle(rightPaddle, COLORS.white);
+    drawLegacyElement(() => {
+        ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h);
+        ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h);
+    });
   }
 
-  ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
-  
   if(!isLegacyMode){
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
     ctx.fillStyle = COLORS.yellow;
     ctx.shadowColor = COLORS.yellow; ctx.shadowBlur = 18;
     ctx.fill();
     ctx.shadowBlur = 0;
   } else {
-    ctx.fillStyle = COLORS.white;
-    ctx.fill();
-  }
-  
-  if(isLegacyMode){
-    drawScanlines();
+    drawLegacyElement(() => {
+        ctx.beginPath();
+        ctx.rect(ball.x - ball.r, ball.y - ball.r, ball.r*2, ball.r*2); 
+        ctx.fill();
+    });
   }
 }
 
 function drawPaddle(p, color){
   ctx.fillStyle = color;
-  if(!isLegacyMode){
-    ctx.shadowColor = color;
-    ctx.shadowBlur = 16;
-  }
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 16;
   ctx.beginPath();
-  (ctx.roundRect && !isLegacyMode) ? ctx.roundRect(p.x, p.y, p.w, p.h, 4) : ctx.rect(p.x, p.y, p.w, p.h);
+  (ctx.roundRect) ? ctx.roundRect(p.x, p.y, p.w, p.h, 4) : ctx.rect(p.x, p.y, p.w, p.h);
   ctx.fill();
   ctx.shadowBlur = 0;
 }
 
-function drawScanlines(){
-  ctx.save();
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'; 
-  ctx.lineWidth = 1; 
-  for(let y = 0; y < H; y += 2){ 
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-  }
-  ctx.restore();
+function drawLegacyElement(drawFn) {
+    const shift = 2 * S; 
+    
+    ctx.fillStyle = 'rgba(255, 40, 40, 0.8)';
+    ctx.save();
+    ctx.translate(-shift, 0);
+    drawFn();
+    ctx.restore();
+    
+    ctx.fillStyle = 'rgba(40, 100, 255, 0.8)';
+    ctx.save();
+    ctx.translate(shift, 0);
+    drawFn();
+    ctx.restore();
+
+    // Portato a 1.0 per far risaltare maggiormente le barre
+    ctx.fillStyle = 'rgba(255, 250, 240, 1)';
+    drawFn();
 }
 
-/* Inizializzazione corretta all'avvio */
 resetEntities(); 
 toggleLegacy(false); 
 draw();
