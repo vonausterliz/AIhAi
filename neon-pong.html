@@ -17,16 +17,21 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     padding: 24px 16px;
     min-height: 100vh;
     color: #e8e8f0;
+    position: relative;
+    transition: padding 0.2s;
   }
+  
   h1.title {
     font-size: 32px;
     letter-spacing: 10px;
     color: var(--neon-cyan);
     text-shadow: 0 0 8px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 40px rgba(77,252,255,0.4);
     margin-bottom: 4px;
+    transition: all 0.2s;
   }
   .subtitle {
     color: #7a7a9a;
@@ -38,31 +43,33 @@
     position: relative;
     width: 800px;
     max-width: 100%;
+    transition: all 0.2s;
   }
   canvas {
     display: block;
     width: 100%;
-    aspect-ratio: 800 / 500;
     background: var(--bg-dark);
     border: 2px solid #2a2a44;
     border-radius: 10px;
     box-shadow: 0 0 40px rgba(77,252,255,0.15), inset 0 0 60px rgba(0,0,0,0.6);
+    transition: border-radius 0.2s;
   }
   .overlay {
     position:absolute; inset:0;
     background: rgba(5,5,10,0.92);
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     text-align:center; border-radius:10px; padding: 20px; z-index: 10;
-    gap: 14px;
   }
   .overlay.hidden { display:none; }
   .overlay h2 {
     color: var(--neon-pink);
     text-shadow: 0 0 8px var(--neon-pink), 0 0 24px rgba(255,77,196,0.5);
-    font-size: 24px; letter-spacing: 4px; margin-bottom: 6px;
+    font-size: 24px; letter-spacing: 4px; margin-bottom: 8px;
   }
-  .overlay p { color:#b8b8d0; font-size: 13px; max-width: 460px; line-height:1.6; margin-bottom: 6px; }
-  .mode-row, .diff-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .overlay p { color:#b8b8d0; font-size: 13px; max-width: 480px; line-height:1.6; margin-bottom: 16px; }
+  
+  .opt-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom: 10px; }
+  
   .opt-btn {
     background: transparent;
     color: var(--neon-cyan);
@@ -76,14 +83,20 @@
     transition: all 0.15s;
   }
   .opt-btn:hover { background: rgba(77,252,255,0.12); box-shadow: 0 0 14px rgba(77,252,255,0.4); }
-  .opt-btn.selected {
-    background: var(--neon-cyan);
-    color: #05050a;
-    box-shadow: 0 0 20px rgba(77,252,255,0.7);
-  }
-  .diff-row .opt-btn { border-color: var(--neon-yellow); color: var(--neon-yellow); }
-  .diff-row .opt-btn:hover { background: rgba(255,249,77,0.12); box-shadow: 0 0 14px rgba(255,249,77,0.4); }
-  .diff-row .opt-btn.selected { background: var(--neon-yellow); color:#05050a; box-shadow: 0 0 20px rgba(255,249,77,0.7); }
+  .opt-btn.selected { background: var(--neon-cyan); color: #05050a; box-shadow: 0 0 20px rgba(77,252,255,0.7); }
+  
+  #diffRow .opt-btn { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+  #diffRow .opt-btn:hover { background: rgba(255,249,77,0.12); box-shadow: 0 0 14px rgba(255,249,77,0.4); }
+  #diffRow .opt-btn.selected { background: var(--neon-yellow); color:#05050a; box-shadow: 0 0 20px rgba(255,249,77,0.7); }
+  
+  #legacyRow .opt-btn { border-color: #FFF; color: #FFF; font-weight: bold; }
+  #legacyRow .opt-btn:hover { background: rgba(255,255,255,0.15); box-shadow: 0 0 14px rgba(255,255,255,0.3); }
+  #legacyRow .opt-btn.selected { background: #FFF; color:#05050a; box-shadow: 0 0 20px rgba(255,255,255,0.6); }
+
+  #displayRow .opt-btn { border-color: #a3a3c2; color: #a3a3c2; }
+  #displayRow .opt-btn:hover { background: rgba(163,163,194,0.15); box-shadow: 0 0 14px rgba(163,163,194,0.4); }
+  #displayRow .opt-btn.selected { background: #a3a3c2; color:#05050a; box-shadow: 0 0 20px rgba(163,163,194,0.7); }
+
   .big-btn {
     background: var(--neon-pink);
     color: #05050a;
@@ -97,10 +110,10 @@
     font-family: inherit;
     box-shadow: 0 0 20px rgba(255,77,196,0.6);
     transition: transform 0.1s;
-    margin-top: 6px;
+    margin-top: 10px;
   }
   .big-btn:hover { transform: scale(1.05); }
-  .big-btn:disabled { opacity: 0.35; cursor: not-allowed; transform:none; }
+  
   .controls-hint {
     margin-top: 14px;
     color: #6a6a88;
@@ -110,7 +123,50 @@
     line-height: 1.6;
   }
   .controls-hint b { color: #9a9ac0; }
-  .pause-hint { position:absolute; top:10px; right:14px; color:#4a4a68; font-size:11px; letter-spacing:1px; }
+  .top-hints { position:absolute; top:10px; right:14px; color:#4a4a68; font-size:11px; letter-spacing:1px; text-align:right; }
+
+  /* --- Fullscreen Mode Styles --- */
+  body.is-fullscreen {
+    padding: 0;
+    background: #000;
+  }
+  body.is-fullscreen .title,
+  body.is-fullscreen .subtitle,
+  body.is-fullscreen .controls-hint,
+  body.is-fullscreen .top-hints {
+    display: none; 
+  }
+  body.is-fullscreen .game-wrap {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+  }
+  body.is-fullscreen canvas {
+    border-radius: 0;
+    border: none;
+    width: 100%;
+    height: 100%;
+  }
+  body.is-fullscreen .overlay {
+    border-radius: 0;
+  }
+
+  /* --- Legacy Mode Styles --- */
+  body.legacy-mode { background: #000; color: #e8e8f0; }
+  body.legacy-mode * { text-shadow: none !important; box-shadow: none !important; }
+  body.legacy-mode h1.title { color: #e8e8f0; }
+  body.legacy-mode .subtitle { color: #888; }
+  body.legacy-mode canvas {
+    background: #000;
+    border: 3px solid #FFF;
+    image-rendering: pixelated; 
+    image-rendering: crisp-edges;
+  }
+  body.is-fullscreen.legacy-mode canvas { border: none; }
+  body.legacy-mode .overlay { background: rgba(0,0,0,0.96); }
+  body.legacy-mode .overlay h2 { color: #e8e8f0; }
+  body.legacy-mode .overlay p { color: #ccc; }
+  body.legacy-mode .top-hints { display: none; }
 </style>
 </head>
 <body>
@@ -120,21 +176,35 @@
 
 <div class="game-wrap">
   <canvas id="canvas" width="800" height="500"></canvas>
-  <div class="pause-hint">SPAZIO = pausa</div>
+  <div class="top-hints">SPAZIO = Pausa<br>F = Fullscreen</div>
 
   <div class="overlay" id="startScreen">
     <h2>SCEGLI LA TUA SFIDA</h2>
     <p>Primo a 7 punti vince. Muovi la racchetta per intercettare la pallina: più la colpisci ai bordi, più l'angolo si fa imprevedibile.</p>
 
-    <div class="mode-row" id="modeRow">
+    <!-- Display Row -->
+    <div class="opt-row" id="displayRow">
+      <button class="opt-btn selected" id="btnWindow" onclick="setDisplay('window')">FINESTRA</button>
+      <button class="opt-btn" id="btnFullscreen" onclick="setDisplay('fullscreen')">SCHERMO INTERO (F)</button>
+    </div>
+
+    <!-- Mode Row -->
+    <div class="opt-row" id="modeRow">
       <button class="opt-btn selected" data-mode="cpu" onclick="selectMode('cpu')">1 GIOCATORE (vs CPU)</button>
       <button class="opt-btn" data-mode="2p" onclick="selectMode('2p')">2 GIOCATORI</button>
     </div>
 
-    <div class="diff-row" id="diffRow">
+    <!-- Diff Row -->
+    <div class="opt-row" id="diffRow">
       <button class="opt-btn" data-diff="easy" onclick="selectDiff('easy')">FACILE</button>
       <button class="opt-btn selected" data-diff="normal" onclick="selectDiff('normal')">NORMALE</button>
       <button class="opt-btn" data-diff="hard" onclick="selectDiff('hard')">DIFFICILE</button>
+    </div>
+
+    <!-- Legacy Row -->
+    <div class="opt-row" id="legacyRow">
+      <button class="opt-btn selected" data-legacy="off" onclick="toggleLegacy(false)">MODO NEON</button>
+      <button class="opt-btn" data-legacy="on" onclick="toggleLegacy(true)">MODO LEGACY (CRT)</button>
     </div>
 
     <button class="big-btn" onclick="startGame()">▶ GIOCA</button>
@@ -153,29 +223,83 @@
 </div>
 
 <div class="controls-hint" id="controlsHint">
-  Giocatore sinistro: <b>W</b> / <b>S</b> &nbsp;&nbsp;|&nbsp;&nbsp; Giocatore destro: <b>↑</b> / <b>↓</b>
+  Muovi la racchetta con <b>W</b> / <b>S</b> oppure <b>↑</b> / <b>↓</b>
 </div>
 
 <script>
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+
+let BASE_W = 800; 
+const BASE_H = 500; 
+
+const BASE_PADDLE_W = 14, BASE_PADDLE_H = 90, BASE_PADDLE_SPEED = 7;
+const BASE_BALL_R = 8, BASE_BALL_SPEED = 5.2;
 
 const COLORS = { cyan: '#4dfcff', pink: '#ff4dc4', yellow: '#fff94d', white: '#e8e8f0' };
+
+let W = BASE_W, H = BASE_H;
+let S = 1; 
+let isLegacyMode = false;
+
+let paddleW = BASE_PADDLE_W, paddleH = BASE_PADDLE_H, paddleSpeed = BASE_PADDLE_SPEED;
+let ballR = BASE_BALL_R, ballSpeedBase = BASE_BALL_SPEED;
 
 let mode = 'cpu';
 let difficulty = 'normal';
 let running = false;
 let paused = false;
 
-const PADDLE_W = 14, PADDLE_H = 90, PADDLE_SPEED = 7;
 const WIN_SCORE = 7;
 
 let leftPaddle, rightPaddle, ball, keys, scoreLeft, scoreRight, trail;
 
+function resizeCanvas() {
+  const isFs = !!document.fullscreenElement;
+  if (isFs) {
+    const ratio = window.innerWidth / window.innerHeight;
+    BASE_W = Math.max(600, BASE_H * ratio); 
+  } else {
+    BASE_W = 800; 
+  }
+  
+  canvas.style.aspectRatio = `${BASE_W} / ${BASE_H}`;
+  updateScalingFactor();
+  
+  if (typeof leftPaddle !== 'undefined' && typeof rightPaddle !== 'undefined') {
+    leftPaddle.x = 24 * S;
+    rightPaddle.x = W - (24 * S) - paddleW;
+    leftPaddle.y = Math.min(leftPaddle.y, H - leftPaddle.h);
+    rightPaddle.y = Math.min(rightPaddle.y, H - rightPaddle.h);
+  }
+  
+  if (typeof ball !== 'undefined') {
+    if (ball.x > W - ball.r) ball.x = W - ball.r;
+    if (ball.x < ball.r) ball.x = ball.r;
+  }
+  
+  // Guard aggiunto per prevenire il crash iniziale ("undefined")
+  if (!running && typeof scoreLeft !== 'undefined') draw();
+}
+
+function updateScalingFactor(){
+  S = isLegacyMode ? 0.5 : 1;
+  canvas.width = BASE_W * S;
+  canvas.height = BASE_H * S;
+  W = canvas.width;
+  H = canvas.height;
+
+  paddleW = BASE_PADDLE_W * S;
+  paddleH = BASE_PADDLE_H * S;
+  paddleSpeed = BASE_PADDLE_SPEED * S;
+  ballR = BASE_BALL_R * S;
+  ballSpeedBase = BASE_BALL_SPEED * S;
+}
+
 function resetEntities(){
-  leftPaddle = { x: 24, y: H/2 - PADDLE_H/2, w: PADDLE_W, h: PADDLE_H, dy: 0 };
-  rightPaddle = { x: W - 24 - PADDLE_W, y: H/2 - PADDLE_H/2, w: PADDLE_W, h: PADDLE_H, dy: 0 };
+  resizeCanvas(); 
+  leftPaddle = { x: 24 * S, y: H/2 - paddleH/2, w: paddleW, h: paddleH, dy: 0 };
+  rightPaddle = { x: W - (24 * S) - paddleW, y: H/2 - paddleH/2, w: paddleW, h: paddleH, dy: 0 };
   scoreLeft = 0; scoreRight = 0;
   keys = {};
   trail = [];
@@ -183,10 +307,10 @@ function resetEntities(){
 }
 
 function resetBall(direction){
-  const speed = 5.2;
-  const angle = (Math.random() * 0.6 - 0.3); // radians spread
+  const speed = ballSpeedBase;
+  const angle = (Math.random() * 0.6 - 0.3);
   ball = {
-    x: W/2, y: H/2, r: 8,
+    x: W/2, y: H/2, r: ballR,
     vx: Math.cos(angle) * speed * direction,
     vy: Math.sin(angle) * speed * 3.2,
     speed: speed
@@ -194,7 +318,6 @@ function resetBall(direction){
   trail = [];
 }
 
-/* ---- Audio (simple beeps, no external files) ---- */
 let audioCtx = null;
 function beep(freq, duration, vol){
   try{
@@ -208,13 +331,12 @@ function beep(freq, duration, vol){
     osc.start();
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
     osc.stop(audioCtx.currentTime + duration);
-  } catch(e){ /* audio not available, ignore */ }
+  } catch(e){ }
 }
 function sfxHit(){ beep(220, 0.08, 0.06); }
 function sfxWall(){ beep(140, 0.06, 0.05); }
 function sfxScore(){ beep(90, 0.35, 0.08); }
 
-/* ---- Mode / Difficulty selection ---- */
 function selectMode(m){
   mode = m;
   document.querySelectorAll('#modeRow .opt-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === m));
@@ -227,11 +349,41 @@ function selectDiff(d){
   difficulty = d;
   document.querySelectorAll('#diffRow .opt-btn').forEach(b => b.classList.toggle('selected', b.dataset.diff === d));
 }
+function toggleLegacy(isOn){
+  isLegacyMode = isOn;
+  document.querySelectorAll('#legacyRow .opt-btn').forEach(b => b.classList.toggle('selected', (b.dataset.legacy === 'on') === isOn));
+  document.body.classList.toggle('legacy-mode', isOn);
+  resizeCanvas();
+}
+
+function setDisplay(mode) {
+  if (mode === 'fullscreen') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => console.log(err));
+    }
+  } else {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.log(err));
+    }
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  const isFs = !!document.fullscreenElement;
+  document.body.classList.toggle('is-fullscreen', isFs);
+  document.getElementById('btnWindow').classList.toggle('selected', !isFs);
+  document.getElementById('btnFullscreen').classList.toggle('selected', isFs);
+  resizeCanvas();
+});
+
+window.addEventListener('resize', () => {
+  if (document.fullscreenElement) resizeCanvas();
+});
 
 function startGame(){
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('winScreen').classList.add('hidden');
-  resetEntities();
+  resetEntities(); 
   running = true;
   paused = false;
   requestAnimationFrame(loop);
@@ -249,14 +401,16 @@ function togglePause(){
   document.getElementById('pauseScreen').classList.toggle('hidden', !paused);
 }
 
-/* ---- Input ---- */
 document.addEventListener('keydown', (e) => {
   keys[e.key] = true;
   if(e.key === ' '){ e.preventDefault(); togglePause(); }
+  if(e.key.toLowerCase() === 'f'){ 
+    e.preventDefault(); 
+    setDisplay(document.fullscreenElement ? 'window' : 'fullscreen'); 
+  }
 });
 document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 
-/* ---- Game loop ---- */
 function loop(){
   if(!running) return;
   if(!paused){
@@ -267,62 +421,55 @@ function loop(){
 }
 
 function update(){
-  // left paddle: W/S always player-controlled
-  if(keys['w'] || keys['W']) leftPaddle.y -= PADDLE_SPEED;
-  if(keys['s'] || keys['S']) leftPaddle.y += PADDLE_SPEED;
+  if(keys['w'] || keys['W']) leftPaddle.y -= paddleSpeed;
+  if(keys['s'] || keys['S']) leftPaddle.y += paddleSpeed;
 
   if(mode === '2p'){
-    if(keys['ArrowUp']) rightPaddle.y -= PADDLE_SPEED;
-    if(keys['ArrowDown']) rightPaddle.y += PADDLE_SPEED;
+    if(keys['ArrowUp']) rightPaddle.y -= paddleSpeed;
+    if(keys['ArrowDown']) rightPaddle.y += paddleSpeed;
   } else {
-    // also allow arrow keys to control left paddle in 1P mode for comfort
-    if(keys['ArrowUp']) leftPaddle.y -= PADDLE_SPEED;
-    if(keys['ArrowDown']) leftPaddle.y += PADDLE_SPEED;
+    if(keys['ArrowUp']) leftPaddle.y -= paddleSpeed;
+    if(keys['ArrowDown']) leftPaddle.y += paddleSpeed;
     aiMove();
   }
 
   leftPaddle.y = Math.max(0, Math.min(H - leftPaddle.h, leftPaddle.y));
   rightPaddle.y = Math.max(0, Math.min(H - rightPaddle.h, rightPaddle.y));
 
-  // trail
-  trail.push({x: ball.x, y: ball.y});
-  if(trail.length > 10) trail.shift();
+  if(!isLegacyMode){
+    trail.push({x: ball.x, y: ball.y});
+    if(trail.length > 10) trail.shift();
+  } else {
+    trail = []; 
+  }
 
   ball.x += ball.vx;
   ball.y += ball.vy;
 
-  // top/bottom bounce
   if(ball.y - ball.r < 0){ ball.y = ball.r; ball.vy *= -1; sfxWall(); }
   if(ball.y + ball.r > H){ ball.y = H - ball.r; ball.vy *= -1; sfxWall(); }
 
-  // paddle collisions
-  if(ball.vx < 0 && ball.x - ball.r < leftPaddle.x + leftPaddle.w && ball.x - ball.r > leftPaddle.x - 10
+  if(ball.vx < 0 && ball.x - ball.r < leftPaddle.x + leftPaddle.w && ball.x - ball.r > leftPaddle.x - (10 * S)
      && ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.h){
     bounceOffPaddle(leftPaddle, 1);
   }
-  if(ball.vx > 0 && ball.x + ball.r > rightPaddle.x && ball.x + ball.r < rightPaddle.x + rightPaddle.w + 10
+  if(ball.vx > 0 && ball.x + ball.r > rightPaddle.x && ball.x + ball.r < rightPaddle.x + rightPaddle.w + (10 * S)
      && ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.h){
     bounceOffPaddle(rightPaddle, -1);
   }
 
-  // scoring
-  if(ball.x < -30){
-    scoreRight++;
-    sfxScore();
-    checkWin();
-    if(running) resetBall(1);
-  } else if(ball.x > W + 30){
-    scoreLeft++;
-    sfxScore();
-    checkWin();
-    if(running) resetBall(-1);
+  if(ball.x < -(30 * S)){
+    scoreRight++; sfxScore(); checkWin(); if(running) resetBall(1);
+  } else if(ball.x > W + (30 * S)){
+    scoreLeft++; sfxScore(); checkWin(); if(running) resetBall(-1);
   }
 }
 
 function bounceOffPaddle(paddle, dir){
-  const relative = (ball.y - (paddle.y + paddle.h/2)) / (paddle.h/2); // -1..1
-  const bounceAngle = relative * (Math.PI/3); // max 60deg
-  ball.speed = Math.min(ball.speed + 0.4, 13);
+  const relative = (ball.y - (paddle.y + paddle.h/2)) / (paddle.h/2);
+  const bounceAngle = relative * (Math.PI/3); 
+  const ballMaxSpeed = 13 * S;
+  ball.speed = Math.min(ball.speed + (0.4 * S), ballMaxSpeed);
   ball.vx = Math.cos(bounceAngle) * ball.speed * dir;
   ball.vy = Math.sin(bounceAngle) * ball.speed;
   ball.x = dir === 1 ? paddle.x + paddle.w + ball.r : paddle.x - ball.r;
@@ -330,22 +477,23 @@ function bounceOffPaddle(paddle, dir){
 }
 
 function aiMove(){
-  const diffSettings = {
+  const baseDiffSettings = {
     easy:   { speed: 4.2, error: 55, reaction: 0.05 },
     normal: { speed: 5.6, error: 28, reaction: 0.10 },
     hard:   { speed: 7.2, error: 8,  reaction: 0.18 }
   };
-  const s = diffSettings[difficulty];
+  const s = baseDiffSettings[difficulty];
   const paddleCenter = rightPaddle.y + rightPaddle.h/2;
+  const currentSpeed = s.speed * S;
+  const currentError = s.error * S;
 
-  // predicted target with some jitter based on difficulty error margin
   if(!rightPaddle._target || Math.random() < s.reaction){
-    rightPaddle._target = ball.y + (Math.random() * 2 - 1) * s.error;
+    rightPaddle._target = ball.y + (Math.random() * 2 - 1) * currentError;
   }
   const target = rightPaddle._target;
 
-  if(paddleCenter < target - 6) rightPaddle.y += s.speed;
-  else if(paddleCenter > target + 6) rightPaddle.y -= s.speed;
+  if(paddleCenter < target - (6 * S)) rightPaddle.y += currentSpeed;
+  else if(paddleCenter > target + (6 * S)) rightPaddle.y -= currentSpeed;
 }
 
 function checkWin(){
@@ -360,72 +508,118 @@ function checkWin(){
   }
 }
 
-/* ---- Rendering ---- */
 function draw(){
-  ctx.clearRect(0, 0, W, H);
-
-  // background subtle grid
-  ctx.strokeStyle = 'rgba(77,252,255,0.05)';
-  ctx.lineWidth = 1;
-  for(let gx = 0; gx < W; gx += 40){
-    ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
-  }
-  for(let gy = 0; gy < H; gy += 40){
-    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  if(!isLegacyMode){
+    ctx.clearRect(0, 0, W, H);
+  } else {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; 
+    ctx.fillRect(0, 0, W, H);
   }
 
-  // center dashed line
-  ctx.strokeStyle = 'rgba(232,232,240,0.25)';
-  ctx.lineWidth = 3;
-  ctx.setLineDash([12, 14]);
-  ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
-  ctx.setLineDash([]);
+  if(!isLegacyMode){
+    ctx.strokeStyle = 'rgba(77,252,255,0.05)';
+    ctx.lineWidth = 1;
+    for(let gx = 0; gx < W; gx += 40){
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+    for(let gy = 0; gy < H; gy += 40){
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+  }
 
-  // scores
-  ctx.font = 'bold 48px "Courier New", monospace';
+  if(!isLegacyMode){
+    ctx.strokeStyle = 'rgba(232,232,240,0.25)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 14]);
+    ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    ctx.strokeStyle = '#e8e8f0';
+    ctx.lineWidth = 1; 
+    ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+  }
+
+  const scoreFontSize = 48 * S;
+  const scoreTextOffsetY = 60 * S;
+  const scoreTextOffsetX = 70 * S;
+  ctx.font = `bold ${scoreFontSize}px "Courier New", monospace`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = COLORS.cyan;
-  ctx.shadowColor = COLORS.cyan; ctx.shadowBlur = 14;
-  ctx.fillText(scoreLeft, W/2 - 70, 60);
-  ctx.fillStyle = COLORS.pink;
-  ctx.shadowColor = COLORS.pink;
-  ctx.fillText(scoreRight, W/2 + 70, 60);
-  ctx.shadowBlur = 0;
+  
+  if(!isLegacyMode){
+    ctx.fillStyle = COLORS.cyan;
+    ctx.shadowColor = COLORS.cyan; ctx.shadowBlur = 14;
+    ctx.fillText(scoreLeft, W/2 - scoreTextOffsetX, scoreTextOffsetY);
+    ctx.fillStyle = COLORS.pink;
+    ctx.shadowColor = COLORS.pink;
+    ctx.fillText(scoreRight, W/2 + scoreTextOffsetX, scoreTextOffsetY);
+    ctx.shadowBlur = 0;
+  } else {
+    ctx.fillStyle = COLORS.white;
+    ctx.fillText(scoreLeft, W/2 - scoreTextOffsetX, scoreTextOffsetY);
+    ctx.fillText(scoreRight, W/2 + scoreTextOffsetX, scoreTextOffsetY);
+  }
 
-  // ball trail
-  trail.forEach((t, i) => {
-    const alpha = (i / trail.length) * 0.35;
-    ctx.beginPath();
-    ctx.arc(t.x, t.y, ball.r * (i/trail.length), 0, Math.PI*2);
-    ctx.fillStyle = `rgba(255,249,77,${alpha})`;
-    ctx.fill();
-  });
+  if(!isLegacyMode){
+    trail.forEach((t, i) => {
+      const alpha = (i / trail.length) * 0.35;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, ball.r * (i/trail.length), 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,249,77,${alpha})`;
+      ctx.fill();
+    });
+  }
 
-  // paddles
-  drawPaddle(leftPaddle, COLORS.cyan);
-  drawPaddle(rightPaddle, COLORS.pink);
+  if(!isLegacyMode){
+    drawPaddle(leftPaddle, COLORS.cyan);
+    drawPaddle(rightPaddle, COLORS.pink);
+  } else {
+    drawPaddle(leftPaddle, COLORS.white);
+    drawPaddle(rightPaddle, COLORS.white);
+  }
 
-  // ball
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
-  ctx.fillStyle = COLORS.yellow;
-  ctx.shadowColor = COLORS.yellow; ctx.shadowBlur = 18;
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  
+  if(!isLegacyMode){
+    ctx.fillStyle = COLORS.yellow;
+    ctx.shadowColor = COLORS.yellow; ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  } else {
+    ctx.fillStyle = COLORS.white;
+    ctx.fill();
+  }
+  
+  if(isLegacyMode){
+    drawScanlines();
+  }
 }
 
 function drawPaddle(p, color){
   ctx.fillStyle = color;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 16;
+  if(!isLegacyMode){
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 16;
+  }
   ctx.beginPath();
-  ctx.roundRect ? ctx.roundRect(p.x, p.y, p.w, p.h, 4) : ctx.rect(p.x, p.y, p.w, p.h);
+  (ctx.roundRect && !isLegacyMode) ? ctx.roundRect(p.x, p.y, p.w, p.h, 4) : ctx.rect(p.x, p.y, p.w, p.h);
   ctx.fill();
   ctx.shadowBlur = 0;
 }
 
-/* initial idle draw before game start */
-resetEntities();
+function drawScanlines(){
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)'; 
+  ctx.lineWidth = 1; 
+  for(let y = 0; y < H; y += 2){ 
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* Inizializzazione corretta all'avvio */
+resetEntities(); 
+toggleLegacy(false); 
 draw();
 </script>
 
