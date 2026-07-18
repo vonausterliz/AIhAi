@@ -11,7 +11,7 @@
   // diversi (cioè il file è stato aggiornato), forziamo un ricaricamento che bypassa
   // la cache aggiungendo un parametro univoco all'URL.
   // AGGIORNA QUESTO NUMERO OGNI VOLTA CHE RICARICHI UNA NUOVA VERSIONE SU GITHUB PAGES:
-  const PAGE_VERSION = 'v3';
+  const PAGE_VERSION = 'v4';
   (function(){
     try {
       const stored = sessionStorage.getItem('neonPongVersion');
@@ -86,6 +86,7 @@
     text-align:center; border-radius:10px; padding: 20px; z-index: 10;
   }
   .overlay.hidden { display:none; }
+  .hidden { display: none !important; }
   .overlay h2 {
     color: var(--neon-pink);
     text-shadow: 0 0 8px var(--neon-pink), 0 0 24px rgba(255,77,196,0.5);
