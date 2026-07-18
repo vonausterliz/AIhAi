@@ -218,6 +218,41 @@
   body.legacy-mode .overlay h2, body.legacy-mode #countdownText, body.legacy-mode #winStatsText { color: #e8e8f0; }
   body.legacy-mode .overlay p { color: #ccc; }
   body.legacy-mode .top-hints { display: none; }
+
+  /* Pannello online ridisegnato */
+  .online-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(77,252,255,0.2);
+    border-radius: 8px;
+    padding: 14px;
+  }
+  .online-card-title { color: var(--neon-cyan); font-size: 14px; letter-spacing: 1px; margin-bottom: 4px; }
+  .online-card-desc { color: #9a9ac0; font-size: 11.5px; line-height: 1.5; }
+  .online-divider {
+    text-align:center; color:#4a4a68; font-size:11px; letter-spacing:2px;
+    margin: 10px 0; position: relative;
+  }
+  .online-divider::before, .online-divider::after {
+    content:''; position:absolute; top:50%; width:38%; height:1px; background:#2a2a44;
+  }
+  .online-divider::before { left:0; } .online-divider::after { right:0; }
+  .room-code-label { color:#9a9ac0; font-size:11px; letter-spacing:1px; text-align:center; margin-bottom:6px; }
+  .room-code-display {
+    font-size: 42px; font-weight: bold; letter-spacing: 10px; text-align:center;
+    color: var(--neon-yellow); text-shadow: 0 0 12px rgba(255,249,77,0.6);
+    background: rgba(0,0,0,0.3); border: 2px dashed rgba(255,249,77,0.4); border-radius: 8px;
+    padding: 12px 8px; margin-bottom: 10px;
+  }
+  .online-back-link {
+    background:none; border:none; color:#6a6a88; font-size:11px; letter-spacing:0.5px;
+    text-decoration:underline; cursor:pointer; font-family:inherit; padding:4px;
+  }
+  .online-back-link:hover { color:#9a9ac0; }
+  .advanced-toggle {
+    background:none; border:none; color:#3a3a54; font-size:10px; letter-spacing:0.5px;
+    cursor:pointer; font-family:inherit; align-self:center; padding:2px;
+  }
+  .advanced-toggle:hover { color:#6a6a88; }
 </style>
 </head>
 <body>
@@ -244,17 +279,46 @@
       <button class="opt-btn" data-mode="online" onclick="selectMode('online')">ONLINE (via internet)</button>
     </div>
 
-    <div class="opt-row hidden" id="onlinePanel" style="flex-direction:column; align-items:center; gap:10px; background:rgba(77,252,255,0.05); border:1px solid rgba(77,252,255,0.25); border-radius:8px; padding:14px; width:100%; max-width:420px;">
-      <div style="display:flex; gap:8px; align-items:center; width:100%;">
-        <label style="font-size:11px; color:#9a9ac0; letter-spacing:1px; white-space:nowrap;">SERVER:</label>
-        <input id="serverUrlInput" type="text" value="wss://von-neon-pong.azurewebsites.net" style="flex:1; background:#0a0a14; border:1px solid #2a2a44; color:var(--neon-cyan); padding:7px 9px; border-radius:5px; font-family:inherit; font-size:12px;">
+    <div class="opt-row hidden" id="onlinePanel" style="flex-direction:column; align-items:stretch; gap:0; background:rgba(77,252,255,0.05); border:1px solid rgba(77,252,255,0.25); border-radius:10px; padding:18px; width:100%; max-width:440px;">
+
+      <div id="onlineChoice">
+        <div class="online-card">
+          <div class="online-card-title">🎮 Crea una nuova partita</div>
+          <div class="online-card-desc">Genera un codice a 4 cifre da condividere con chi vuoi sfidare.</div>
+          <button class="big-btn" style="width:100%; margin-top:10px; padding:10px;" onclick="createRoom()">CREA PARTITA</button>
+        </div>
+
+        <div class="online-divider">oppure</div>
+
+        <div class="online-card">
+          <div class="online-card-title">🔑 Hai già un codice?</div>
+          <div class="online-card-desc">Chiedi il codice a chi ti ha invitato e inseriscilo qui per unirti alla sua partita.</div>
+          <div style="display:flex; gap:8px; margin-top:10px;">
+            <input id="joinCodeInput" type="text" maxlength="4" placeholder="CODICE" style="flex:1; text-align:center; background:#0a0a14; border:2px solid var(--neon-cyan); color:var(--neon-cyan); padding:9px; border-radius:6px; font-family:inherit; font-size:15px; letter-spacing:4px;">
+            <button class="opt-btn" onclick="joinRoom()">UNISCITI</button>
+          </div>
+        </div>
       </div>
-      <div class="opt-row" style="margin-bottom:0;">
-        <button class="opt-btn" onclick="createRoom()">CREA STANZA</button>
-        <input id="joinCodeInput" type="text" maxlength="4" placeholder="CODICE" style="width:80px; text-align:center; background:#0a0a14; border:2px solid var(--neon-cyan); color:var(--neon-cyan); padding:9px; border-radius:6px; font-family:inherit; font-size:13px; letter-spacing:2px;">
-        <button class="opt-btn" onclick="joinRoom()">UNISCITI</button>
+
+      <div id="onlineRoomInfo" class="hidden">
+        <div class="room-code-label" id="roomInfoLabel">Il tuo codice stanza</div>
+        <div class="room-code-display" id="roomCodeDisplay">— — — —</div>
+        <button class="opt-btn" id="copyCodeBtn" style="width:100%; margin-bottom:10px;" onclick="copyRoomCode()">📋 COPIA CODICE</button>
+        <div class="online-card-desc" style="text-align:center;" id="roomInfoDesc"></div>
+        <div style="text-align:center; margin-top:10px;">
+          <button class="online-back-link" onclick="leaveOnlineSetup()">← Annulla e torna indietro</button>
+        </div>
       </div>
-      <div id="onlineStatus" style="font-size:12px; color:#9a9ac0; letter-spacing:0.5px; min-height:18px; text-align:center;"></div>
+
+      <div id="onlineStatus" style="font-size:12px; color:#9a9ac0; letter-spacing:0.5px; min-height:18px; text-align:center; margin-top:10px;"></div>
+
+      <div style="text-align:center; margin-top:6px;">
+        <button class="advanced-toggle" onclick="toggleAdvancedServer()" id="advancedToggleBtn">⚙ impostazioni server (avanzate)</button>
+      </div>
+      <div class="hidden" id="advancedServerPanel" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+        <label style="font-size:10px; color:#6a6a88; letter-spacing:1px; white-space:nowrap;">SERVER:</label>
+        <input id="serverUrlInput" type="text" value="wss://von-neon-pong.azurewebsites.net" style="flex:1; background:#0a0a14; border:1px solid #2a2a44; color:var(--neon-cyan); padding:6px 8px; border-radius:5px; font-family:inherit; font-size:11px;">
+      </div>
     </div>
 
     <div class="opt-row" id="diffRow">
@@ -428,15 +492,15 @@ function setOnlineStatus(msg, isError){
 function ensureSocket(){
   if (onlineSocket && onlineSocket.readyState === WebSocket.OPEN) return onlineSocket;
   const url = document.getElementById('serverUrlInput').value.trim();
-  if (!url || url.includes('YOUR-SERVER-URL')){
-    setOnlineStatus('Inserisci prima l\'indirizzo del server (vedi README).', true);
+  if (!url){
+    setOnlineStatus('Indirizzo server mancante — apri "impostazioni server" qui sotto.', true);
     return null;
   }
   const ws = new WebSocket(url);
   onlineSocket = ws;
 
   ws.onopen = () => setOnlineStatus('Connesso al server...');
-  ws.onerror = () => setOnlineStatus('Impossibile connettersi al server. Controlla l\'indirizzo.', true);
+  ws.onerror = () => setOnlineStatus('Impossibile connettersi al server. Riprova tra poco.', true);
   ws.onclose = () => {
     if (onlineReadyToPlay || mode === 'online'){
       setOnlineStatus('Connessione persa.', true);
@@ -448,13 +512,49 @@ function ensureSocket(){
   return ws;
 }
 
+function toggleAdvancedServer(){
+  const panel = document.getElementById('advancedServerPanel');
+  panel.classList.toggle('hidden');
+}
+
+function showRoomInfo(label, code, desc){
+  document.getElementById('onlineChoice').classList.add('hidden');
+  document.getElementById('onlineRoomInfo').classList.remove('hidden');
+  document.getElementById('roomInfoLabel').textContent = label;
+  document.getElementById('roomCodeDisplay').textContent = code;
+  document.getElementById('roomInfoDesc').textContent = desc;
+}
+
+function copyRoomCode(){
+  if (!onlineRoomCode) return;
+  const btn = document.getElementById('copyCodeBtn');
+  const done = () => { btn.textContent = '✓ COPIATO'; setTimeout(() => { btn.textContent = '📋 COPIA CODICE'; }, 1500); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(onlineRoomCode).then(done).catch(done);
+  } else {
+    done();
+  }
+}
+
+function leaveOnlineSetup(){
+  if (onlineSocket){ onlineSocket.close(); onlineSocket = null; }
+  onlineReadyToPlay = false;
+  onlineSide = null;
+  onlineRoomCode = null;
+  document.getElementById('onlineChoice').classList.remove('hidden');
+  document.getElementById('onlineRoomInfo').classList.add('hidden');
+  document.getElementById('joinCodeInput').value = '';
+  setOnlineStatus('');
+  updatePlayButtonState();
+}
+
 function createRoom(){
   const ws = ensureSocket();
   if (!ws) return;
   const trySend = () => ws.send(JSON.stringify({ type:'create' }));
   if (ws.readyState === WebSocket.OPEN) trySend();
   else ws.addEventListener('open', trySend, { once:true });
-  setOnlineStatus('Creazione stanza in corso...');
+  setOnlineStatus('Creazione partita in corso...');
 }
 
 function joinRoom(){
@@ -468,7 +568,7 @@ function joinRoom(){
   const trySend = () => ws.send(JSON.stringify({ type:'join', code }));
   if (ws.readyState === WebSocket.OPEN) trySend();
   else ws.addEventListener('open', trySend, { once:true });
-  setOnlineStatus('Tentativo di ingresso nella stanza ' + code + '...');
+  setOnlineStatus('Ingresso nella partita ' + code + ' in corso...');
 }
 
 function updatePlayButtonState(){
@@ -482,12 +582,14 @@ function handleOnlineMessage(msg){
   if (msg.type === 'created'){
     onlineSide = msg.side;
     onlineRoomCode = msg.code;
-    setOnlineStatus('Stanza creata! Codice: ' + msg.code + ' — condividilo con l\'avversario. In attesa che si unisca...');
+    showRoomInfo('Il tuo codice partita', msg.code, 'Condividi questo codice con chi vuoi sfidare. Appena si sarà unito, potrete premere entrambi GIOCA qui sotto.');
+    setOnlineStatus('In attesa che l\'avversario si unisca...');
   }
   else if (msg.type === 'joined'){
     onlineSide = msg.side;
     onlineRoomCode = msg.code;
-    setOnlineStatus('Entrato nella stanza ' + msg.code + '. In attesa dell\'altro giocatore...');
+    showRoomInfo('Sei entrato nella partita', msg.code, 'Aspetta che anche l\'host sia pronto, poi premete entrambi GIOCA qui sotto.');
+    setOnlineStatus('Connesso! In attesa dell\'altro giocatore...');
   }
   else if (msg.type === 'error'){
     setOnlineStatus(msg.message, true);
@@ -589,6 +691,11 @@ function selectMode(m){
   document.getElementById('diffRow').style.display = (m === 'cpu') ? 'flex' : 'none';
   document.getElementById('onlinePanel').classList.toggle('hidden', m !== 'online');
   document.getElementById('legacyRow').style.display = (m === 'online') ? 'none' : 'flex';
+
+  if (m === 'online' && !onlineSocket){
+    document.getElementById('onlineChoice').classList.remove('hidden');
+    document.getElementById('onlineRoomInfo').classList.add('hidden');
+  }
 
   const playBtn = document.getElementById('playBtn');
   if (m === 'online'){
@@ -701,6 +808,8 @@ function backToMenu(){
   onlineSide = null;
   onlineRoomCode = null;
   setOnlineStatus('');
+  document.getElementById('onlineChoice').classList.remove('hidden');
+  document.getElementById('onlineRoomInfo').classList.add('hidden');
 }
 
 function togglePause(){
