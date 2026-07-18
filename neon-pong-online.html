@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<meta charset="UTF-8">
+<title>NEON PONG</title>
+<style>
+  :root {
+    --neon-cyan: #4dfcff;
+    --neon-pink: #ff4dc4;
+    --neon-yellow: #fff94d;
+    --bg-dark: #050510;
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    background: radial-gradient(ellipse at center, #10101c 0%, #050508 100%);
+    font-family: 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+    color: #e8e8f0;
+    position: relative;
+    transition: padding 0.2s, background 0.3s;
+    overflow: hidden;
+  }
+  
+  h1.title {
+    font-size: 32px;
+    letter-spacing: 10px;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 40px rgba(77,252,255,0.4);
+    margin-bottom: 4px;
+    transition: all 0.2s;
+  }
+  .subtitle {
+    color: #7a7a9a;
+    font-size: 12px;
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+  }
+  .game-wrap {
+    position: relative;
+    width: 800px;
+    max-width: 100%;
+    transition: all 0.2s;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    background: var(--bg-dark);
+    border: 2px solid #2a2a44;
+    border-radius: 10px;
+    box-shadow: 0 0 40px rgba(77,252,255,0.15), inset 0 0 60px rgba(0,0,0,0.6);
+    transition: border-radius 0.2s;
+  }
+  .overlay {
+    position:absolute; inset:0;
+    background: rgba(5,5,10,0.92);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; border-radius:10px; padding: 20px; z-index: 10;
+  }
+  .overlay.hidden { display:none; }
+  .overlay h2 {
+    color: var(--neon-pink);
+    text-shadow: 0 0 8px var(--neon-pink), 0 0 24px rgba(255,77,196,0.5);
+    font-size: 24px; letter-spacing: 4px; margin-bottom: 8px;
+  }
+  .overlay p { color:#b8b8d0; font-size: 13px; max-width: 480px; line-height:1.6; margin-bottom: 16px; }
+  
+  .opt-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom: 10px; }
+  
+  .opt-btn {
+    background: transparent;
+    color: var(--neon-cyan);
+    border: 2px solid var(--neon-cyan);
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: 13px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .opt-btn:hover { background: rgba(77,252,255,0.12); box-shadow: 0 0 14px rgba(77,252,255,0.4); }
+  .opt-btn.selected { background: var(--neon-cyan); color: #05050a; box-shadow: 0 0 20px rgba(77,252,255,0.7); }
+  
+  #diffRow .opt-btn { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+  #diffRow .opt-btn:hover { background: rgba(255,249,77,0.12); box-shadow: 0 0 14px rgba(255,249,77,0.4); }
+  #diffRow .opt-btn.selected { background: var(--neon-yellow); color:#05050a; box-shadow: 0 0 20px rgba(255,249,77,0.7); }
+  
+  #legacyRow .opt-btn { border-color: #FFF; color: #FFF; font-weight: bold; }
+  #legacyRow .opt-btn:hover { background: rgba(255,255,255,0.15); box-shadow: 0 0 14px rgba(255,255,255,0.3); }
+  #legacyRow .opt-btn.selected { background: #FFF; color:#05050a; box-shadow: 0 0 20px rgba(255,255,255,0.6); }
+
+  #displayRow .opt-btn { border-color: #a3a3c2; color: #a3a3c2; }
+  #displayRow .opt-btn:hover { background: rgba(163,163,194,0.15); box-shadow: 0 0 14px rgba(163,163,194,0.4); }
+  #displayRow .opt-btn.selected { background: #a3a3c2; color:#05050a; box-shadow: 0 0 20px rgba(163,163,194,0.7); }
+
+  .big-btn {
+    background: var(--neon-pink);
+    color: #05050a;
+    border: none;
+    border-radius: 8px;
+    padding: 13px 34px;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: 0 0 20px rgba(255,77,196,0.6);
+    transition: transform 0.1s;
+    margin-top: 10px;
+  }
+  .big-btn:hover { transform: scale(1.05); }
+
+  #winStatsText {
+    color: var(--neon-cyan);
+    font-weight: bold;
+    font-size: 15px;
+    letter-spacing: 2px;
+    margin-top: 10px;
+    text-shadow: 0 0 8px rgba(77,252,255,0.5);
+  }
+  
+  .controls-hint {
+    margin-top: 14px;
+    color: #6a6a88;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .controls-hint b { color: #9a9ac0; }
+  .top-hints { position:absolute; top:10px; right:14px; color:#4a4a68; font-size:11px; letter-spacing:1px; text-align:right; z-index: 20;}
+
+  /* -- Countdown Animation -- */
+  @keyframes pulseCount {
+    0% { transform: scale(0.8); opacity: 0; }
+    20% { transform: scale(1.1); opacity: 1; }
+    80% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.9); opacity: 0; }
+  }
+  #countdownText {
+    font-size: 120px;
+    color: var(--neon-yellow);
+    text-shadow: 0 0 20px var(--neon-yellow), 0 0 40px rgba(255,249,77,0.5);
+    margin: 0;
+  }
+  .animate-pulse {
+    animation: pulseCount 1s ease-in-out;
+  }
+
+  /* --- Fullscreen Mode Styles --- */
+  body.is-fullscreen { padding: 0; background: #000; }
+  body.is-fullscreen .title, body.is-fullscreen .subtitle,
+  body.is-fullscreen .controls-hint, body.is-fullscreen .top-hints { display: none; }
+  body.is-fullscreen .game-wrap { width: 100vw; height: 100vh; max-width: none; }
+  body.is-fullscreen canvas { border-radius: 0; border: none; width: 100%; height: 100%; }
+  body.is-fullscreen .overlay { border-radius: 0; }
+
+  /* --- EXTREME LEGACY MODE STYLES --- */
+  @keyframes crtFlicker {
+    0% { opacity: 0.92; }
+    5% { opacity: 0.85; }
+    10% { opacity: 0.95; }
+    15% { opacity: 1; }
+    50% { opacity: 0.98; }
+    90% { opacity: 0.94; }
+    100% { opacity: 1; }
+  }
+
+  @keyframes crtRoll {
+    0% { top: -20%; height: 10%; opacity: 0.05; }
+    50% { opacity: 0.12; }
+    100% { top: 120%; height: 20%; opacity: 0.05; }
+  }
+
+  body.legacy-mode { background: #050505; color: #e8e8f0; }
+  body.legacy-mode * { text-shadow: none !important; box-shadow: none !important; }
+  body.legacy-mode h1.title { color: #e8e8f0; }
+  body.legacy-mode .subtitle { color: #888; }
+  
+  body.legacy-mode canvas {
+    background: #020202;
+    border: 4px solid #b3b3b3;
+    border-radius: 20px;
+    image-rendering: pixelated; 
+    image-rendering: crisp-edges;
+    /* Blur ridotto per restituire definizione alle barre */
+    filter: contrast(1.4) brightness(1.2) sepia(0.3) blur(0.2px);
+    animation: crtFlicker 0.12s infinite;
+  }
+  
+  body.is-fullscreen.legacy-mode canvas { border: none; border-radius: 0; }
+
+  body.legacy-mode .game-wrap::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%),
+                radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.85) 100%);
+    background-size: 100% 4px, 100% 100%;
+    box-shadow: inset 0 0 80px rgba(0,0,0,0.9);
+    border-radius: 20px;
+  }
+  body.is-fullscreen.legacy-mode .game-wrap::after { border-radius: 0; }
+
+  body.legacy-mode .game-wrap::before {
+    content: ""; position: absolute; left: 0; right: 0;
+    background: rgba(255, 255, 255, 0.15); z-index: 4; pointer-events: none;
+    animation: crtRoll 8s linear infinite;
+  }
+
+  body.legacy-mode .overlay { background: rgba(0,0,0,0.96); z-index: 10; }
+  body.legacy-mode .overlay h2, body.legacy-mode #countdownText, body.legacy-mode #winStatsText { color: #e8e8f0; }
+  body.legacy-mode .overlay p { color: #ccc; }
+  body.legacy-mode .top-hints { display: none; }
+</style>
+</head>
+<body>
+
+<h1 class="title">NEON PONG</h1>
+<div class="subtitle">— la sfida classica, ricaricata —</div>
+
+<div class="game-wrap">
+  <canvas id="canvas" width="800" height="500"></canvas>
+  <div class="top-hints">SPAZIO = Pausa<br>F = Fullscreen</div>
+
+  <div class="overlay" id="startScreen">
+    <h2>SCEGLI LA TUA SFIDA</h2>
+    <p>Primo a 7 punti vince. Muovi la racchetta per intercettare la pallina: più la colpisci ai bordi, più l'angolo si fa imprevedibile.</p>
+
+    <div class="opt-row" id="displayRow">
+      <button class="opt-btn selected" id="btnWindow" onclick="setDisplay('window')">FINESTRA</button>
+      <button class="opt-btn" id="btnFullscreen" onclick="setDisplay('fullscreen')">SCHERMO INTERO (F)</button>
+    </div>
+
+    <div class="opt-row" id="modeRow">
+      <button class="opt-btn selected" data-mode="cpu" onclick="selectMode('cpu')">1 GIOCATORE (vs CPU)</button>
+      <button class="opt-btn" data-mode="2p" onclick="selectMode('2p')">2 GIOCATORI (stessa tastiera)</button>
+      <button class="opt-btn" data-mode="online" onclick="selectMode('online')">ONLINE (via internet)</button>
+    </div>
+
+    <div class="opt-row hidden" id="onlinePanel" style="flex-direction:column; align-items:center; gap:10px; background:rgba(77,252,255,0.05); border:1px solid rgba(77,252,255,0.25); border-radius:8px; padding:14px; width:100%; max-width:420px;">
+      <div style="display:flex; gap:8px; align-items:center; width:100%;">
+        <label style="font-size:11px; color:#9a9ac0; letter-spacing:1px; white-space:nowrap;">SERVER:</label>
+        <input id="serverUrlInput" type="text" value="wss://von-neon-pong.azurewebsites.net" style="flex:1; background:#0a0a14; border:1px solid #2a2a44; color:var(--neon-cyan); padding:7px 9px; border-radius:5px; font-family:inherit; font-size:12px;">
+      </div>
+      <div class="opt-row" style="margin-bottom:0;">
+        <button class="opt-btn" onclick="createRoom()">CREA STANZA</button>
+        <input id="joinCodeInput" type="text" maxlength="4" placeholder="CODICE" style="width:80px; text-align:center; background:#0a0a14; border:2px solid var(--neon-cyan); color:var(--neon-cyan); padding:9px; border-radius:6px; font-family:inherit; font-size:13px; letter-spacing:2px;">
+        <button class="opt-btn" onclick="joinRoom()">UNISCITI</button>
+      </div>
+      <div id="onlineStatus" style="font-size:12px; color:#9a9ac0; letter-spacing:0.5px; min-height:18px; text-align:center;"></div>
+    </div>
+
+    <div class="opt-row" id="diffRow">
+      <button class="opt-btn" data-diff="easy" onclick="selectDiff('easy')">FACILE</button>
+      <button class="opt-btn selected" data-diff="normal" onclick="selectDiff('normal')">NORMALE</button>
+      <button class="opt-btn" data-diff="hard" onclick="selectDiff('hard')">DIFFICILE</button>
+    </div>
+
+    <div class="opt-row" id="legacyRow">
+      <button class="opt-btn selected" data-legacy="off" onclick="toggleLegacy(false)">MODO NEON</button>
+      <button class="opt-btn" data-legacy="on" onclick="toggleLegacy(true)">MODO LEGACY EXTREME</button>
+    </div>
+
+    <button class="big-btn" id="playBtn" onclick="startGame()">▶ GIOCA</button>
+  </div>
+
+  <div class="overlay hidden" id="countdownScreen" style="background: rgba(5,5,10,0.7);">
+    <h2 id="countdownText">3</h2>
+  </div>
+
+  <div class="overlay hidden" id="winScreen">
+    <h2 id="winTitle">VITTORIA!</h2>
+    <p id="winText"></p>
+    <p id="winStatsText"></p>
+    <button class="big-btn" onclick="backToMenu()">MENU</button>
+  </div>
+
+  <div class="overlay hidden" id="pauseScreen">
+    <h2>PAUSA</h2>
+    <button class="big-btn" onclick="togglePause()">▶ RIPRENDI</button>
+  </div>
+</div>
+
+<div class="controls-hint" id="controlsHint">
+  Muovi la racchetta con <b>W</b> / <b>S</b> oppure <b>↑</b> / <b>↓</b>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let BASE_W = 800; 
+const BASE_H = 500; 
+
+const BASE_PADDLE_W = 14, BASE_PADDLE_H = 90, BASE_PADDLE_SPEED = 7;
+const BASE_BALL_R = 8, BASE_BALL_SPEED = 5.2;
+
+const COLORS = { cyan: '#4dfcff', pink: '#ff4dc4', yellow: '#fff94d', white: '#e8e8f0' };
+
+let W = BASE_W, H = BASE_H;
+let S = 1; 
+let isLegacyMode = false;
+
+let paddleW = BASE_PADDLE_W, paddleH = BASE_PADDLE_H, paddleSpeed = BASE_PADDLE_SPEED;
+let ballR = BASE_BALL_R, ballSpeedBase = BASE_BALL_SPEED;
+
+let mode = 'cpu';
+let difficulty = 'normal';
+let running = false;
+let paused = false;
+
+let totalWinsLeft = 0;
+let totalWinsRight = 0;
+
+// --- stato multiplayer online ---
+let onlineSocket = null;
+let onlineReadyToPlay = false; // true quando la stanza ha 2 giocatori ed è pronta a ricevere "ready"
+let onlineSide = null; // 'left' | 'right' — quale racchetta controlli tu
+let onlineRoomCode = null;
+let onlineLastDir = 0; // ultimo input inviato, per non spammare messaggi identici
+let onlineCountdownActive = false;
+
+const WIN_SCORE = 7;
+
+let leftPaddle, rightPaddle, ball, keys, scoreLeft, scoreRight, trail;
+
+function resizeCanvas() {
+  const isFs = !!document.fullscreenElement;
+  if (mode === 'online'){
+    // In modalità online lo spazio di gioco deve restare fisso 800x500,
+    // identico a quello simulato dal server: niente riscalature dinamiche.
+    BASE_W = 800;
+  } else if (isFs) {
+    const ratio = window.innerWidth / window.innerHeight;
+    BASE_W = Math.max(600, BASE_H * ratio); 
+  } else {
+    BASE_W = 800; 
+  }
+  
+  canvas.style.aspectRatio = `${BASE_W} / ${BASE_H}`;
+  updateScalingFactor();
+  
+  if (typeof leftPaddle !== 'undefined' && typeof rightPaddle !== 'undefined') {
+    leftPaddle.x = 24 * S;
+    rightPaddle.x = W - (24 * S) - paddleW;
+    leftPaddle.y = Math.min(leftPaddle.y, H - leftPaddle.h);
+    rightPaddle.y = Math.min(rightPaddle.y, H - rightPaddle.h);
+  }
+  
+  if (typeof ball !== 'undefined') {
+    if (ball.x > W - ball.r) ball.x = W - ball.r;
+    if (ball.x < ball.r) ball.x = ball.r;
+  }
+  
+  if (!running && typeof scoreLeft !== 'undefined') draw();
+}
+
+function updateScalingFactor(){
+  S = isLegacyMode ? 0.45 : 1;
+  canvas.width = BASE_W * S;
+  canvas.height = BASE_H * S;
+  W = canvas.width;
+  H = canvas.height;
+
+  paddleW = BASE_PADDLE_W * S;
+  paddleH = BASE_PADDLE_H * S;
+  paddleSpeed = BASE_PADDLE_SPEED * S;
+  ballR = BASE_BALL_R * S;
+  ballSpeedBase = BASE_BALL_SPEED * S;
+}
+
+function resetEntities(){
+  resizeCanvas(); 
+  leftPaddle = { x: 24 * S, y: H/2 - paddleH/2, w: paddleW, h: paddleH, dy: 0 };
+  rightPaddle = { x: W - (24 * S) - paddleW, y: H/2 - paddleH/2, w: paddleW, h: paddleH, dy: 0 };
+  scoreLeft = 0; scoreRight = 0;
+  keys = {};
+  trail = [];
+  resetBall(Math.random() < 0.5 ? -1 : 1);
+}
+
+function resetBall(direction){
+  const speed = ballSpeedBase;
+  const angle = (Math.random() * 0.6 - 0.3);
+  ball = {
+    x: W/2, y: H/2, r: ballR,
+    vx: Math.cos(angle) * speed * direction,
+    vy: Math.sin(angle) * speed * 3.2,
+    speed: speed
+  };
+  trail = [];
+}
+
+let audioCtx = null;
+function beep(freq, duration, vol){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    gain.gain.value = vol;
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e){ }
+}
+function sfxHit(){ beep(220, 0.08, 0.06); }
+function sfxWall(){ beep(140, 0.06, 0.05); }
+function sfxScore(){ beep(90, 0.35, 0.08); }
+
+// ================= MULTIPLAYER ONLINE =================
+function setOnlineStatus(msg, isError){
+  const el = document.getElementById('onlineStatus');
+  el.textContent = msg;
+  el.style.color = isError ? '#ff4d6a' : '#9a9ac0';
+}
+
+function ensureSocket(){
+  if (onlineSocket && onlineSocket.readyState === WebSocket.OPEN) return onlineSocket;
+  const url = document.getElementById('serverUrlInput').value.trim();
+  if (!url || url.includes('YOUR-SERVER-URL')){
+    setOnlineStatus('Inserisci prima l\'indirizzo del server (vedi README).', true);
+    return null;
+  }
+  const ws = new WebSocket(url);
+  onlineSocket = ws;
+
+  ws.onopen = () => setOnlineStatus('Connesso al server...');
+  ws.onerror = () => setOnlineStatus('Impossibile connettersi al server. Controlla l\'indirizzo.', true);
+  ws.onclose = () => {
+    if (onlineReadyToPlay || mode === 'online'){
+      setOnlineStatus('Connessione persa.', true);
+    }
+    onlineReadyToPlay = false;
+    updatePlayButtonState();
+  };
+  ws.onmessage = (ev) => handleOnlineMessage(JSON.parse(ev.data));
+  return ws;
+}
+
+function createRoom(){
+  const ws = ensureSocket();
+  if (!ws) return;
+  const trySend = () => ws.send(JSON.stringify({ type:'create' }));
+  if (ws.readyState === WebSocket.OPEN) trySend();
+  else ws.addEventListener('open', trySend, { once:true });
+  setOnlineStatus('Creazione stanza in corso...');
+}
+
+function joinRoom(){
+  const code = document.getElementById('joinCodeInput').value.trim();
+  if (!/^\d{4}$/.test(code)){
+    setOnlineStatus('Inserisci un codice a 4 cifre valido.', true);
+    return;
+  }
+  const ws = ensureSocket();
+  if (!ws) return;
+  const trySend = () => ws.send(JSON.stringify({ type:'join', code }));
+  if (ws.readyState === WebSocket.OPEN) trySend();
+  else ws.addEventListener('open', trySend, { once:true });
+  setOnlineStatus('Tentativo di ingresso nella stanza ' + code + '...');
+}
+
+function updatePlayButtonState(){
+  if (mode !== 'online') return;
+  const playBtn = document.getElementById('playBtn');
+  playBtn.disabled = !onlineReadyToPlay;
+  playBtn.textContent = onlineReadyToPlay ? '▶ GIOCA' : 'IN ATTESA DELLA STANZA...';
+}
+
+function handleOnlineMessage(msg){
+  if (msg.type === 'created'){
+    onlineSide = msg.side;
+    onlineRoomCode = msg.code;
+    setOnlineStatus('Stanza creata! Codice: ' + msg.code + ' — condividilo con l\'avversario. In attesa che si unisca...');
+  }
+  else if (msg.type === 'joined'){
+    onlineSide = msg.side;
+    onlineRoomCode = msg.code;
+    setOnlineStatus('Entrato nella stanza ' + msg.code + '. In attesa dell\'altro giocatore...');
+  }
+  else if (msg.type === 'error'){
+    setOnlineStatus(msg.message, true);
+  }
+  else if (msg.type === 'both_joined'){
+    onlineReadyToPlay = true;
+    updatePlayButtonState();
+    setOnlineStatus('Avversario connesso! Premi GIOCA quando sei pronto.');
+  }
+  else if (msg.type === 'start'){
+    document.getElementById('startScreen').classList.add('hidden');
+    document.getElementById('winScreen').classList.add('hidden');
+    scoreLeft = 0; scoreRight = 0;
+    leftPaddle = { x: 24, y: H/2 - BASE_PADDLE_H/2, w: BASE_PADDLE_W, h: BASE_PADDLE_H };
+    rightPaddle = { x: W - 24 - BASE_PADDLE_W, y: H/2 - BASE_PADDLE_H/2, w: BASE_PADDLE_W, h: BASE_PADDLE_H };
+    ball = { x: W/2, y: H/2, r: BASE_BALL_R };
+    trail = [];
+    running = true;
+    paused = false;
+    runOnlineCountdownOverlay(Math.round((msg.freezeMs || 3000) / 1000));
+    requestAnimationFrame(loop);
+  }
+  else if (msg.type === 'state'){
+    if (!running) return;
+    const s = msg.s;
+    leftPaddle.y = s.leftY;
+    rightPaddle.y = s.rightY;
+    ball.x = s.ball.x; ball.y = s.ball.y; ball.r = s.ball.r;
+    scoreLeft = s.scoreLeft; scoreRight = s.scoreRight;
+  }
+  else if (msg.type === 'gameover'){
+    running = false;
+    const leftWon = msg.winner === 'left';
+    const youWon = (onlineSide === 'left' && leftWon) || (onlineSide === 'right' && !leftWon);
+    document.getElementById('winTitle').textContent = youWon ? 'HAI VINTO!' : 'HAI PERSO';
+    document.getElementById('winText').textContent = `Punteggio finale: ${msg.scoreLeft} - ${msg.scoreRight}`;
+    document.getElementById('winStatsText').textContent = 'Premi "RIVINCITA" per un\'altra partita nella stessa stanza.';
+    const menuBtn = document.querySelector('#winScreen .big-btn');
+    menuBtn.textContent = '🔄 RIVINCITA';
+    menuBtn.onclick = () => {
+      document.getElementById('winScreen').classList.add('hidden');
+      setOnlineStatus('In attesa che anche l\'avversario sia pronto per la rivincita...');
+      onlineSocket.send(JSON.stringify({ type:'ready' }));
+    };
+  }
+  else if (msg.type === 'opponent_left'){
+    running = false;
+    setOnlineStatus('Il tuo avversario si è disconnesso.', true);
+    document.getElementById('winTitle').textContent = 'AVVERSARIO DISCONNESSO';
+    document.getElementById('winText').textContent = 'La partita è terminata perché l\'altro giocatore ha lasciato la stanza.';
+    document.getElementById('winStatsText').textContent = '';
+    const menuBtn = document.querySelector('#winScreen .big-btn');
+    menuBtn.textContent = 'MENU';
+    menuBtn.onclick = backToMenu;
+    document.getElementById('winScreen').classList.remove('hidden');
+    onlineReadyToPlay = false;
+  }
+}
+
+function runOnlineCountdownOverlay(seconds){
+  const cdScreen = document.getElementById('countdownScreen');
+  const cdText = document.getElementById('countdownText');
+  cdScreen.classList.remove('hidden');
+  onlineCountdownActive = true;
+  let count = seconds;
+  function tick(){
+    cdText.classList.remove('animate-pulse');
+    void cdText.offsetWidth;
+    cdText.classList.add('animate-pulse');
+    if (count > 0){
+      cdText.textContent = count;
+      beep(440, 0.1, 0.1);
+      count--;
+      setTimeout(tick, 1000);
+    } else {
+      cdText.textContent = 'VIA!';
+      beep(880, 0.2, 0.1);
+      setTimeout(() => { cdScreen.classList.add('hidden'); onlineCountdownActive = false; }, 700);
+    }
+  }
+  tick();
+}
+
+function sendOnlineInput(dir){
+  if (dir === onlineLastDir) return;
+  onlineLastDir = dir;
+  if (onlineSocket && onlineSocket.readyState === WebSocket.OPEN){
+    onlineSocket.send(JSON.stringify({ type:'input', dir }));
+  }
+}
+// ============= FINE MULTIPLAYER ONLINE =============
+
+function selectMode(m){
+  mode = m;
+  totalWinsLeft = 0;
+  totalWinsRight = 0;
+
+  document.querySelectorAll('#modeRow .opt-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === m));
+  document.getElementById('diffRow').style.display = (m === 'cpu') ? 'flex' : 'none';
+  document.getElementById('onlinePanel').classList.toggle('hidden', m !== 'online');
+  document.getElementById('legacyRow').style.display = (m === 'online') ? 'none' : 'flex';
+
+  const playBtn = document.getElementById('playBtn');
+  if (m === 'online'){
+    playBtn.disabled = !onlineReadyToPlay;
+    playBtn.textContent = onlineReadyToPlay ? '▶ GIOCA' : 'IN ATTESA DELLA STANZA...';
+  } else {
+    playBtn.disabled = false;
+    playBtn.textContent = '▶ GIOCA';
+    if (onlineSocket){ onlineSocket.close(); onlineSocket = null; }
+    onlineReadyToPlay = false;
+  }
+
+  document.getElementById('controlsHint').innerHTML = (m === 'cpu')
+    ? 'Muovi la racchetta con <b>W</b> / <b>S</b> oppure <b>↑</b> / <b>↓</b>'
+    : (m === 'online')
+      ? 'Muovi la tua racchetta con <b>W</b>/<b>S</b> oppure <b>↑</b>/<b>↓</b> (qualsiasi dei due funziona)'
+      : 'Giocatore sinistro: <b>W</b> / <b>S</b> &nbsp;&nbsp;|&nbsp;&nbsp; Giocatore destro: <b>↑</b> / <b>↓</b>';
+}
+function selectDiff(d){
+  difficulty = d;
+  document.querySelectorAll('#diffRow .opt-btn').forEach(b => b.classList.toggle('selected', b.dataset.diff === d));
+}
+function toggleLegacy(isOn){
+  isLegacyMode = isOn;
+  document.querySelectorAll('#legacyRow .opt-btn').forEach(b => b.classList.toggle('selected', (b.dataset.legacy === 'on') === isOn));
+  document.body.classList.toggle('legacy-mode', isOn);
+  resizeCanvas();
+}
+
+function setDisplay(mode) {
+  if (mode === 'fullscreen') {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => console.log(err));
+    }
+  } else {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(err => console.log(err));
+    }
+  }
+}
+
+document.addEventListener('fullscreenchange', () => {
+  const isFs = !!document.fullscreenElement;
+  document.body.classList.toggle('is-fullscreen', isFs);
+  document.getElementById('btnWindow').classList.toggle('selected', !isFs);
+  document.getElementById('btnFullscreen').classList.toggle('selected', isFs);
+  resizeCanvas();
+});
+
+window.addEventListener('resize', () => {
+  if (document.fullscreenElement) resizeCanvas();
+});
+
+function startGame(){
+  if (mode === 'online'){
+    if (!onlineReadyToPlay || !onlineSocket) return;
+    setOnlineStatus('In attesa che anche l\'avversario prema GIOCA...');
+    onlineSocket.send(JSON.stringify({ type:'ready' }));
+    return; // il vero avvio arriva col messaggio 'start' dal server
+  }
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('winScreen').classList.add('hidden');
+  resetEntities(); 
+  draw(); 
+  startCountdown();
+}
+
+function startCountdown() {
+  const cdScreen = document.getElementById('countdownScreen');
+  const cdText = document.getElementById('countdownText');
+  cdScreen.classList.remove('hidden');
+  
+  let count = 3;
+  
+  function updateCountdown() {
+    cdText.classList.remove('animate-pulse');
+    void cdText.offsetWidth; 
+    cdText.classList.add('animate-pulse');
+    
+    if (count > 0) {
+      cdText.textContent = count;
+      beep(440, 0.1, 0.1);
+      count--;
+      setTimeout(updateCountdown, 1000);
+    } else if (count === 0) {
+      cdText.textContent = "VIA!";
+      beep(880, 0.2, 0.1);
+      count--;
+      setTimeout(updateCountdown, 1000);
+    } else {
+      cdScreen.classList.add('hidden');
+      running = true;
+      paused = false;
+      requestAnimationFrame(loop);
+    }
+  }
+  
+  updateCountdown();
+}
+
+function backToMenu(){
+  running = false;
+  const menuBtn = document.querySelector('#winScreen .big-btn');
+  menuBtn.textContent = 'MENU';
+  menuBtn.onclick = backToMenu;
+  document.getElementById('winScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+  if (onlineSocket){ onlineSocket.close(); onlineSocket = null; }
+  onlineReadyToPlay = false;
+  onlineSide = null;
+  onlineRoomCode = null;
+  setOnlineStatus('');
+}
+
+function togglePause(){
+  if(!running) return;
+  if(mode === 'online'){
+    setOnlineStatus('In multiplayer online non è possibile mettere in pausa: la partita prosegue sul server.');
+    return;
+  }
+  paused = !paused;
+  document.getElementById('pauseScreen').classList.toggle('hidden', !paused);
+}
+
+document.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+  if(e.key === ' '){ e.preventDefault(); togglePause(); }
+  if(e.key.toLowerCase() === 'f'){ 
+    e.preventDefault(); 
+    setDisplay(document.fullscreenElement ? 'window' : 'fullscreen'); 
+  }
+});
+document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+function loop(){
+  if(!running) return;
+  if(!paused){
+    update();
+    draw();
+  }
+  requestAnimationFrame(loop);
+}
+
+function update(){
+  if (mode === 'online'){
+    // Niente fisica locale: posizioni e punteggio arrivano dal server via 'state'.
+    // Qui inviamo solo il nostro input al server.
+    let dir = 0;
+    if (keys['w'] || keys['W'] || keys['ArrowUp']) dir = -1;
+    else if (keys['s'] || keys['S'] || keys['ArrowDown']) dir = 1;
+    sendOnlineInput(dir);
+    if (!isLegacyMode){
+      trail.push({x: ball.x, y: ball.y});
+      if(trail.length > 10) trail.shift();
+    }
+    return;
+  }
+
+  if(keys['w'] || keys['W']) leftPaddle.y -= paddleSpeed;
+  if(keys['s'] || keys['S']) leftPaddle.y += paddleSpeed;
+
+  if(mode === '2p'){
+    if(keys['ArrowUp']) rightPaddle.y -= paddleSpeed;
+    if(keys['ArrowDown']) rightPaddle.y += paddleSpeed;
+  } else {
+    if(keys['ArrowUp']) leftPaddle.y -= paddleSpeed;
+    if(keys['ArrowDown']) leftPaddle.y += paddleSpeed;
+    aiMove();
+  }
+
+  leftPaddle.y = Math.max(0, Math.min(H - leftPaddle.h, leftPaddle.y));
+  rightPaddle.y = Math.max(0, Math.min(H - rightPaddle.h, rightPaddle.y));
+
+  if(!isLegacyMode){
+    trail.push({x: ball.x, y: ball.y});
+    if(trail.length > 10) trail.shift();
+  } else {
+    trail = []; 
+  }
+
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  if(ball.y - ball.r < 0){ ball.y = ball.r; ball.vy *= -1; sfxWall(); }
+  if(ball.y + ball.r > H){ ball.y = H - ball.r; ball.vy *= -1; sfxWall(); }
+
+  if(ball.vx < 0 && ball.x - ball.r < leftPaddle.x + leftPaddle.w && ball.x - ball.r > leftPaddle.x - (10 * S)
+     && ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.h){
+    bounceOffPaddle(leftPaddle, 1);
+  }
+  if(ball.vx > 0 && ball.x + ball.r > rightPaddle.x && ball.x + ball.r < rightPaddle.x + rightPaddle.w + (10 * S)
+     && ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.h){
+    bounceOffPaddle(rightPaddle, -1);
+  }
+
+  if(ball.x < -(30 * S)){
+    scoreRight++; sfxScore(); checkWin(); if(running) resetBall(1);
+  } else if(ball.x > W + (30 * S)){
+    scoreLeft++; sfxScore(); checkWin(); if(running) resetBall(-1);
+  }
+}
+
+function bounceOffPaddle(paddle, dir){
+  const relative = (ball.y - (paddle.y + paddle.h/2)) / (paddle.h/2);
+  const bounceAngle = relative * (Math.PI/3); 
+  const ballMaxSpeed = 13 * S;
+  ball.speed = Math.min(ball.speed + (0.4 * S), ballMaxSpeed);
+  ball.vx = Math.cos(bounceAngle) * ball.speed * dir;
+  ball.vy = Math.sin(bounceAngle) * ball.speed;
+  ball.x = dir === 1 ? paddle.x + paddle.w + ball.r : paddle.x - ball.r;
+  sfxHit();
+}
+
+function aiMove(){
+  const baseDiffSettings = {
+    easy:   { speed: 4.2, error: 55, reaction: 0.05 },
+    normal: { speed: 5.6, error: 28, reaction: 0.10 },
+    hard:   { speed: 7.2, error: 8,  reaction: 0.18 }
+  };
+  const s = baseDiffSettings[difficulty];
+  const paddleCenter = rightPaddle.y + rightPaddle.h/2;
+  const currentSpeed = s.speed * S;
+  const currentError = s.error * S;
+
+  if(!rightPaddle._target || Math.random() < s.reaction){
+    rightPaddle._target = ball.y + (Math.random() * 2 - 1) * currentError;
+  }
+  const target = rightPaddle._target;
+
+  if(paddleCenter < target - (6 * S)) rightPaddle.y += currentSpeed;
+  else if(paddleCenter > target + (6 * S)) rightPaddle.y -= currentSpeed;
+}
+
+function checkWin(){
+  if(scoreLeft >= WIN_SCORE || scoreRight >= WIN_SCORE){
+    running = false;
+    const leftWon = scoreLeft >= WIN_SCORE;
+    
+    if(leftWon) totalWinsLeft++;
+    else totalWinsRight++;
+    
+    document.getElementById('winTitle').textContent = (mode === 'cpu')
+      ? (leftWon ? 'HAI VINTO!' : 'HA VINTO LA CPU')
+      : (leftWon ? 'VINCE IL GIOCATORE SINISTRO' : 'VINCE IL GIOCATORE DESTRO');
+      
+    document.getElementById('winText').textContent = `Punteggio finale: ${scoreLeft} - ${scoreRight}`;
+    
+    const p1Label = (mode === 'cpu') ? 'GIOCATORE' : 'P1';
+    const p2Label = (mode === 'cpu') ? 'CPU' : 'P2';
+    document.getElementById('winStatsText').textContent = `Vittorie totali: ${p1Label} [ ${totalWinsLeft} ] - [ ${totalWinsRight} ] ${p2Label}`;
+    
+    document.getElementById('winScreen').classList.remove('hidden');
+  }
+}
+
+function draw(){
+  if(!isLegacyMode){
+    ctx.clearRect(0, 0, W, H);
+  } else {
+    // Opacità aumentata (0.2) per accorciare e rendere meno marcata la scia
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; 
+    ctx.fillRect(0, 0, W, H);
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.03)';
+    for(let i=0; i<40; i++) {
+        ctx.fillRect(Math.random()*W, Math.random()*H, 2, 2);
+    }
+  }
+
+  if(!isLegacyMode){
+    ctx.strokeStyle = 'rgba(77,252,255,0.05)';
+    ctx.lineWidth = 1;
+    for(let gx = 0; gx < W; gx += 40){
+      ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, H); ctx.stroke();
+    }
+    for(let gy = 0; gy < H; gy += 40){
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+    }
+  }
+
+  if(!isLegacyMode){
+    ctx.strokeStyle = 'rgba(232,232,240,0.25)';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 14]);
+    ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    drawLegacyElement(() => {
+        ctx.strokeStyle = '#e8e8f0';
+        ctx.lineWidth = 1; 
+        ctx.beginPath(); ctx.moveTo(W/2, 0); ctx.lineTo(W/2, H); ctx.stroke();
+    });
+  }
+
+  const scoreFontSize = 48 * S;
+  const scoreTextOffsetY = 60 * S;
+  const scoreTextOffsetX = 70 * S;
+  ctx.font = `bold ${scoreFontSize}px "Courier New", monospace`;
+  ctx.textAlign = 'center';
+  
+  if(!isLegacyMode){
+    ctx.fillStyle = COLORS.cyan;
+    ctx.shadowColor = COLORS.cyan; ctx.shadowBlur = 14;
+    ctx.fillText(scoreLeft, W/2 - scoreTextOffsetX, scoreTextOffsetY);
+    ctx.fillStyle = COLORS.pink;
+    ctx.shadowColor = COLORS.pink;
+    ctx.fillText(scoreRight, W/2 + scoreTextOffsetX, scoreTextOffsetY);
+    ctx.shadowBlur = 0;
+  } else {
+    drawLegacyElement(() => {
+        ctx.fillText(scoreLeft, W/2 - scoreTextOffsetX, scoreTextOffsetY);
+        ctx.fillText(scoreRight, W/2 + scoreTextOffsetX, scoreTextOffsetY);
+    });
+  }
+
+  if(!isLegacyMode){
+    trail.forEach((t, i) => {
+      const alpha = (i / trail.length) * 0.35;
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, ball.r * (i/trail.length), 0, Math.PI*2);
+      ctx.fillStyle = `rgba(255,249,77,${alpha})`;
+      ctx.fill();
+    });
+  }
+
+  if(!isLegacyMode){
+    drawPaddle(leftPaddle, COLORS.cyan);
+    drawPaddle(rightPaddle, COLORS.pink);
+  } else {
+    drawLegacyElement(() => {
+        ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.w, leftPaddle.h);
+        ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.w, rightPaddle.h);
+    });
+  }
+
+  if(!isLegacyMode){
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI*2);
+    ctx.fillStyle = COLORS.yellow;
+    ctx.shadowColor = COLORS.yellow; ctx.shadowBlur = 18;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  } else {
+    drawLegacyElement(() => {
+        ctx.beginPath();
+        ctx.rect(ball.x - ball.r, ball.y - ball.r, ball.r*2, ball.r*2); 
+        ctx.fill();
+    });
+  }
+}
+
+function drawPaddle(p, color){
+  ctx.fillStyle = color;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 16;
+  ctx.beginPath();
+  (ctx.roundRect) ? ctx.roundRect(p.x, p.y, p.w, p.h, 4) : ctx.rect(p.x, p.y, p.w, p.h);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+}
+
+function drawLegacyElement(drawFn) {
+    const shift = 2 * S; 
+    
+    ctx.fillStyle = 'rgba(255, 40, 40, 0.8)';
+    ctx.save();
+    ctx.translate(-shift, 0);
+    drawFn();
+    ctx.restore();
+    
+    ctx.fillStyle = 'rgba(40, 100, 255, 0.8)';
+    ctx.save();
+    ctx.translate(shift, 0);
+    drawFn();
+    ctx.restore();
+
+    // Portato a 1.0 per far risaltare maggiormente le barre
+    ctx.fillStyle = 'rgba(255, 250, 240, 1)';
+    drawFn();
+}
+
+resetEntities(); 
+toggleLegacy(false); 
+draw();
+</script>
+
+</body>
+</html>
