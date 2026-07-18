@@ -11,7 +11,7 @@
   // diversi (cioè il file è stato aggiornato), forziamo un ricaricamento che bypassa
   // la cache aggiungendo un parametro univoco all'URL.
   // AGGIORNA QUESTO NUMERO OGNI VOLTA CHE RICARICHI UNA NUOVA VERSIONE SU GITHUB PAGES:
-  const PAGE_VERSION = 'v2';
+  const PAGE_VERSION = 'v3';
   (function(){
     try {
       const stored = sessionStorage.getItem('neonPongVersion');
@@ -138,6 +138,7 @@
     margin-top: 10px;
   }
   .big-btn:hover { transform: scale(1.05); }
+  .big-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; filter: grayscale(0.4); }
 
   #winStatsText {
     color: var(--neon-cyan);
@@ -319,6 +320,10 @@
             <button class="opt-btn" onclick="joinRoom()">UNISCITI</button>
           </div>
         </div>
+
+        <div style="text-align:center; margin-top:12px;">
+          <button class="online-back-link" onclick="closeOnlinePanel()">← Torna indietro</button>
+        </div>
       </div>
 
       <div id="onlineRoomInfo" class="hidden">
@@ -326,6 +331,7 @@
         <div class="room-code-display" id="roomCodeDisplay">— — — —</div>
         <button class="opt-btn" id="copyCodeBtn" style="width:100%; margin-bottom:10px;" onclick="copyRoomCode()">📋 COPIA CODICE</button>
         <div class="online-card-desc" style="text-align:center;" id="roomInfoDesc"></div>
+        <button class="big-btn" id="startMatchBtn" style="width:100%; margin-top:12px; padding:10px;" disabled onclick="beginOnlineMatch()">IN ATTESA DELL'AVVERSARIO...</button>
         <div style="text-align:center; margin-top:10px;">
           <button class="online-back-link" onclick="leaveOnlineSetup()">← Annulla e torna indietro</button>
         </div>
@@ -569,6 +575,28 @@ function leaveOnlineSetup(){
   updatePlayButtonState();
 }
 
+function closeOnlinePanel(){
+  // Chiude del tutto il pannello online e torna al pulsante GIOCA principale.
+  if (onlineSocket){ onlineSocket.close(); onlineSocket = null; }
+  onlineReadyToPlay = false;
+  onlineSide = null;
+  onlineRoomCode = null;
+  document.getElementById('onlinePanel').classList.add('hidden');
+  document.getElementById('onlineChoice').classList.remove('hidden');
+  document.getElementById('onlineRoomInfo').classList.add('hidden');
+  document.getElementById('joinCodeInput').value = '';
+  setOnlineStatus('');
+  document.getElementById('playBtn').classList.remove('hidden');
+}
+
+function beginOnlineMatch(){
+  if (!onlineReadyToPlay || !onlineSocket) return;
+  const btn = document.getElementById('startMatchBtn');
+  btn.disabled = true;
+  btn.textContent = 'IN ATTESA CHE ANCHE L\'AVVERSARIO SIA PRONTO...';
+  onlineSocket.send(JSON.stringify({ type:'ready' }));
+}
+
 function createRoom(){
   const ws = ensureSocket();
   if (!ws) return;
@@ -593,23 +621,23 @@ function joinRoom(){
 }
 
 function updatePlayButtonState(){
-  if (mode !== 'online') return;
-  const playBtn = document.getElementById('playBtn');
-  playBtn.disabled = !onlineReadyToPlay;
-  playBtn.textContent = onlineReadyToPlay ? '▶ GIOCA' : 'IN ATTESA DELLA STANZA...';
+  const startMatchBtn = document.getElementById('startMatchBtn');
+  if (!startMatchBtn) return;
+  startMatchBtn.disabled = !onlineReadyToPlay;
+  startMatchBtn.textContent = onlineReadyToPlay ? '▶ INIZIA PARTITA' : 'IN ATTESA DELL\'AVVERSARIO...';
 }
 
 function handleOnlineMessage(msg){
   if (msg.type === 'created'){
     onlineSide = msg.side;
     onlineRoomCode = msg.code;
-    showRoomInfo('Il tuo codice partita', msg.code, 'Condividi questo codice con chi vuoi sfidare. Appena si sarà unito, potrete premere entrambi GIOCA qui sotto.');
+    showRoomInfo('Il tuo codice partita', msg.code, 'Condividi questo codice con chi vuoi sfidare. Appena si sarà unito, potrete premere entrambi INIZIA PARTITA.');
     setOnlineStatus('In attesa che l\'avversario si unisca...');
   }
   else if (msg.type === 'joined'){
     onlineSide = msg.side;
     onlineRoomCode = msg.code;
-    showRoomInfo('Sei entrato nella partita', msg.code, 'Aspetta che anche l\'host sia pronto, poi premete entrambi GIOCA qui sotto.');
+    showRoomInfo('Sei entrato nella partita', msg.code, 'Aspetta che anche l\'host sia pronto, poi premete entrambi INIZIA PARTITA.');
     setOnlineStatus('Connesso! In attesa dell\'altro giocatore...');
   }
   else if (msg.type === 'error'){
@@ -618,7 +646,7 @@ function handleOnlineMessage(msg){
   else if (msg.type === 'both_joined'){
     onlineReadyToPlay = true;
     updatePlayButtonState();
-    setOnlineStatus('Avversario connesso! Premi GIOCA quando sei pronto.');
+    setOnlineStatus('Avversario connesso! Premi INIZIA PARTITA quando sei pronto.');
   }
   else if (msg.type === 'start'){
     document.getElementById('startScreen').classList.add('hidden');
@@ -710,24 +738,20 @@ function selectMode(m){
 
   document.querySelectorAll('#modeRow .opt-btn').forEach(b => b.classList.toggle('selected', b.dataset.mode === m));
   document.getElementById('diffRow').style.display = (m === 'cpu') ? 'flex' : 'none';
-  document.getElementById('onlinePanel').classList.toggle('hidden', m !== 'online');
   document.getElementById('legacyRow').style.display = (m === 'online') ? 'none' : 'flex';
 
-  if (m === 'online' && !onlineSocket){
-    document.getElementById('onlineChoice').classList.remove('hidden');
-    document.getElementById('onlineRoomInfo').classList.add('hidden');
+  // Il pannello online resta chiuso finché non si clicca GIOCA — cambiare
+  // semplicemente modalità non deve mai aprirlo.
+  document.getElementById('onlinePanel').classList.add('hidden');
+  document.getElementById('playBtn').classList.remove('hidden');
+  if (m !== 'online' && onlineSocket){
+    onlineSocket.close(); onlineSocket = null;
   }
+  onlineReadyToPlay = false;
 
   const playBtn = document.getElementById('playBtn');
-  if (m === 'online'){
-    playBtn.disabled = !onlineReadyToPlay;
-    playBtn.textContent = onlineReadyToPlay ? '▶ GIOCA' : 'IN ATTESA DELLA STANZA...';
-  } else {
-    playBtn.disabled = false;
-    playBtn.textContent = '▶ GIOCA';
-    if (onlineSocket){ onlineSocket.close(); onlineSocket = null; }
-    onlineReadyToPlay = false;
-  }
+  playBtn.disabled = false;
+  playBtn.textContent = '▶ GIOCA';
 
   document.getElementById('controlsHint').innerHTML = (m === 'cpu')
     ? 'Muovi la racchetta con <b>W</b> / <b>S</b> oppure <b>↑</b> / <b>↓</b>'
@@ -772,10 +796,13 @@ window.addEventListener('resize', () => {
 
 function startGame(){
   if (mode === 'online'){
-    if (!onlineReadyToPlay || !onlineSocket) return;
-    setOnlineStatus('In attesa che anche l\'avversario prema GIOCA...');
-    onlineSocket.send(JSON.stringify({ type:'ready' }));
-    return; // il vero avvio arriva col messaggio 'start' dal server
+    // Primo click su GIOCA in modalità online: apre il pannello per creare/unirsi
+    // a una partita, e nasconde il pulsante GIOCA principale (l'avvio vero e
+    // proprio avviene dal pulsante "INIZIA PARTITA" dentro il pannello, una
+    // volta che entrambi i giocatori sono connessi).
+    document.getElementById('onlinePanel').classList.remove('hidden');
+    document.getElementById('playBtn').classList.add('hidden');
+    return;
   }
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('winScreen').classList.add('hidden');
@@ -831,6 +858,8 @@ function backToMenu(){
   setOnlineStatus('');
   document.getElementById('onlineChoice').classList.remove('hidden');
   document.getElementById('onlineRoomInfo').classList.add('hidden');
+  document.getElementById('onlinePanel').classList.add('hidden');
+  document.getElementById('playBtn').classList.remove('hidden');
 }
 
 function togglePause(){
