@@ -4,6 +4,27 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
+<script>
+  // Cache-busting: i soli meta tag no-cache non bastano su hosting come GitHub
+  // Pages, perché la CDN applica comunque il proprio header di cache reale sopra
+  // ai meta tag. Qui confrontiamo un numero di versione con quello salvato nel
+  // browser: se sono diversi (cioè il file è stato aggiornato), forziamo un
+  // ricaricamento che bypassa la cache aggiungendo un parametro univoco all'URL.
+  // AGGIORNA QUESTO NUMERO OGNI VOLTA CHE RICARICHI UNA NUOVA VERSIONE ONLINE:
+  const PAGE_VERSION = 'v2';
+  (function(){
+    try {
+      const stored = sessionStorage.getItem('neonBreakerVersion');
+      if (stored !== PAGE_VERSION){
+        sessionStorage.setItem('neonBreakerVersion', PAGE_VERSION);
+        if (!location.search.includes('cb=')){
+          const sep = location.search ? '&' : '?';
+          location.replace(location.pathname + location.search + sep + 'cb=' + Date.now());
+        }
+      }
+    } catch(e){ /* sessionStorage non disponibile (es. modalità privata restrittiva): ignora */ }
+  })();
+</script>
 <meta charset="UTF-8">
 <title>NEON BREAKER</title>
 <style>
@@ -363,9 +384,14 @@ function loop(){
 function update(){
   // paddle movement
   const speed = 9;
-  if (keys['ArrowLeft'] || keys['a'] || keys['A']) paddle.x -= speed;
-  if (keys['ArrowRight'] || keys['d'] || keys['D']) paddle.x += speed;
-  if (mouseX !== null) paddle.x = mouseX - paddle.w/2;
+  const leftKey = keys['ArrowLeft'] || keys['a'] || keys['A'];
+  const rightKey = keys['ArrowRight'] || keys['d'] || keys['D'];
+  if (leftKey || rightKey){
+    if (leftKey) paddle.x -= speed;
+    if (rightKey) paddle.x += speed;
+  } else if (mouseX !== null){
+    paddle.x = mouseX - paddle.w/2;
+  }
   paddle.x = Math.max(0, Math.min(W - paddle.w, paddle.x));
 
   const wide = Date.now() < paddleWideUntil;
