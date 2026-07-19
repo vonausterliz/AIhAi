@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<meta charset="UTF-8">
+<title>NEON BREAKER</title>
+<style>
+  :root {
+    --neon-cyan: #4dfcff;
+    --neon-pink: #ff4dc4;
+    --neon-yellow: #fff94d;
+    --neon-purple: #b04dff;
+    --neon-green: #4dff8f;
+    --neon-orange: #ff9a4d;
+    --bg-dark: #050510;
+  }
+  * { box-sizing: border-box; margin:0; padding:0; }
+  body {
+    background: radial-gradient(ellipse at center, #10101c 0%, #050508 100%);
+    font-family: 'Courier New', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+    color: #e8e8f0;
+  }
+  h1.title {
+    font-size: 30px;
+    letter-spacing: 9px;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 8px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 40px rgba(77,252,255,0.4);
+    margin-bottom: 4px;
+  }
+  .subtitle { color: #7a7a9a; font-size: 12px; letter-spacing: 4px; margin-bottom: 16px; }
+
+  .game-wrap { position: relative; width: 800px; max-width: 100%; }
+  canvas {
+    display: block; width: 100%; aspect-ratio: 800 / 600;
+    background: var(--bg-dark);
+    border: 2px solid #2a2a44; border-radius: 10px;
+    box-shadow: 0 0 40px rgba(77,252,255,0.15), inset 0 0 60px rgba(0,0,0,0.6);
+  }
+  .hud {
+    position:absolute; top:10px; left:14px; right:14px;
+    display:flex; justify-content:space-between; pointer-events:none;
+    font-size: 13px; letter-spacing: 1px; color:#cfcfe6; text-shadow: 0 0 6px rgba(0,0,0,0.8);
+  }
+  .hud b { color: var(--neon-yellow); }
+
+  .overlay {
+    position:absolute; inset:0; background: rgba(5,5,10,0.92);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; border-radius:10px; padding: 20px; z-index: 10; gap: 12px;
+  }
+  .overlay.hidden { display:none; }
+  .hidden { display: none !important; }
+  .overlay h2 {
+    color: var(--neon-pink); text-shadow: 0 0 8px var(--neon-pink), 0 0 24px rgba(255,77,196,0.5);
+    font-size: 24px; letter-spacing: 4px; margin-bottom: 6px;
+  }
+  .overlay p { color:#b8b8d0; font-size: 13px; max-width: 480px; line-height:1.6; margin-bottom: 4px; }
+  .opt-btn {
+    background: transparent; color: var(--neon-cyan); border: 2px solid var(--neon-cyan);
+    border-radius: 6px; padding: 10px 18px; font-family: inherit; font-size: 13px;
+    letter-spacing: 1px; cursor: pointer; transition: all 0.15s;
+  }
+  .opt-btn:hover { background: rgba(77,252,255,0.12); box-shadow: 0 0 14px rgba(77,252,255,0.4); }
+  .opt-btn.selected { background: var(--neon-cyan); color: #05050a; box-shadow: 0 0 20px rgba(77,252,255,0.7); }
+  .diff-row .opt-btn { border-color: var(--neon-yellow); color: var(--neon-yellow); }
+  .diff-row .opt-btn:hover { background: rgba(255,249,77,0.12); box-shadow: 0 0 14px rgba(255,249,77,0.4); }
+  .diff-row .opt-btn.selected { background: var(--neon-yellow); color:#05050a; box-shadow: 0 0 20px rgba(255,249,77,0.7); }
+  .opt-row { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-bottom: 4px; }
+
+  .big-btn {
+    background: var(--neon-pink); color: #05050a; border: none; border-radius: 8px;
+    padding: 13px 34px; font-size: 15px; font-weight: bold; letter-spacing: 2px;
+    cursor: pointer; font-family: inherit; box-shadow: 0 0 20px rgba(255,77,196,0.6);
+    transition: transform 0.1s; margin-top: 6px;
+  }
+  .big-btn:hover { transform: scale(1.05); }
+  .big-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; filter: grayscale(0.4); }
+
+  .controls-hint { margin-top: 14px; color: #6a6a88; font-size: 12px; letter-spacing: 1px; text-align: center; line-height: 1.6; }
+  .controls-hint b { color: #9a9ac0; }
+  .top-hints { position:absolute; top:10px; right:14px; color:#4a4a68; font-size:11px; letter-spacing:1px; text-align:right; }
+
+  .powerup-legend { display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:6px; font-size:11px; color:#9a9ac0; }
+  .powerup-legend span b { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<h1 class="title">NEON BREAKER</h1>
+<div class="subtitle">— distruggi tutti i mattoncini, un livello dopo l'altro —</div>
+
+<div class="game-wrap">
+  <canvas id="canvas" width="800" height="600"></canvas>
+  <div class="hud">
+    <div>PUNTI: <b id="hudScore">0</b> &nbsp;&nbsp; LIVELLO: <b id="hudLevel">1</b></div>
+    <div>VITE: <b id="hudLives">●●●</b></div>
+  </div>
+  <div class="top-hints">SPAZIO = lancia/pausa<br>F = Fullscreen</div>
+
+  <div class="overlay" id="startScreen">
+    <h2>NEON BREAKER</h2>
+    <p>Distruggi tutti i mattoncini muovendo il paddle in basso. Alcuni mattoncini rilasciano power-up: afferrali con il paddle per attivarli. Perdi una vita se la pallina cade oltre il paddle.</p>
+
+    <div class="opt-row diff-row" id="diffRow">
+      <button class="opt-btn" data-diff="easy" onclick="selectDiff('easy')">FACILE</button>
+      <button class="opt-btn selected" data-diff="normal" onclick="selectDiff('normal')">NORMALE</button>
+      <button class="opt-btn" data-diff="hard" onclick="selectDiff('hard')">DIFFICILE</button>
+    </div>
+
+    <button class="big-btn" onclick="startGame()">▶ GIOCA</button>
+
+    <div class="powerup-legend">
+      <span><b style="background:var(--neon-cyan);box-shadow:0 0 6px var(--neon-cyan);"></b>Paddle largo</span>
+      <span><b style="background:var(--neon-purple);box-shadow:0 0 6px var(--neon-purple);"></b>Multi-pallina</span>
+      <span><b style="background:var(--neon-orange);box-shadow:0 0 6px var(--neon-orange);"></b>Rallenta</span>
+      <span><b style="background:var(--neon-green);box-shadow:0 0 6px var(--neon-green);"></b>Vita extra</span>
+      <span><b style="background:var(--neon-pink);box-shadow:0 0 6px var(--neon-pink);"></b>Laser</span>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="levelScreen">
+    <h2 id="levelTitle">LIVELLO 2</h2>
+    <p id="levelText">I mattoncini si infittiscono e la pallina accelera leggermente. Preparati.</p>
+    <button class="big-btn" onclick="continueToNextLevel()">▶ CONTINUA</button>
+  </div>
+
+  <div class="overlay hidden" id="loseLifeScreen">
+    <h2>PALLINA PERSA</h2>
+    <p id="livesLeftText"></p>
+    <button class="big-btn" onclick="continueAfterLifeLoss()">▶ RIPRENDI</button>
+  </div>
+
+  <div class="overlay hidden" id="winScreen">
+    <h2 id="winTitle">GAME OVER</h2>
+    <p id="winText"></p>
+    <button class="big-btn" onclick="backToMenu()">MENU</button>
+  </div>
+
+  <div class="overlay hidden" id="pauseScreen">
+    <h2>PAUSA</h2>
+    <button class="big-btn" onclick="togglePause()">▶ RIPRENDI</button>
+  </div>
+</div>
+
+<div class="controls-hint">
+  Muovi il paddle con <b>← →</b> o <b>A / D</b>, oppure col mouse &nbsp;|&nbsp; <b>SPAZIO</b> per lanciare la pallina o sparare il laser
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const COLORS = {
+  cyan: '#4dfcff', pink: '#ff4dc4', yellow: '#fff94d',
+  purple: '#b04dff', green: '#4dff8f', orange: '#ff9a4d', white: '#e8e8f0'
+};
+const ROW_COLORS = [COLORS.pink, COLORS.orange, COLORS.yellow, COLORS.green, COLORS.cyan, COLORS.purple];
+
+let difficulty = 'normal';
+let running = false;
+let paused = false;
+let keys = {};
+let mouseX = null;
+
+const PADDLE_Y = H - 34;
+const PADDLE_H = 14;
+const BASE_PADDLE_W = 100;
+const BALL_R = 7;
+
+const BRICK_COLS = 10;
+const BRICK_W = 70;
+const BRICK_H = 22;
+const BRICK_GAP = 6;
+const BRICK_OFFSET_TOP = 70;
+const BRICK_OFFSET_LEFT = (W - (BRICK_COLS * (BRICK_W + BRICK_GAP) - BRICK_GAP)) / 2;
+
+let score = 0, level = 1, lives = 3;
+let paddle, balls, bricks, powerups, lasers, trailPoints;
+let paddleWideUntil = 0, laserUntil = 0, slowUntil = 0;
+let ballLaunched = false;
+
+const DIFF_SETTINGS = {
+  easy:   { ballSpeed: 4.2, rows: 4, dropChance: 0.22 },
+  normal: { ballSpeed: 5.0, rows: 5, dropChance: 0.16 },
+  hard:   { ballSpeed: 5.9, rows: 6, dropChance: 0.11 }
+};
+
+/* ---------------- audio (beep semplici, nessun file esterno) ---------------- */
+let audioCtx = null;
+function beep(freq, duration, vol, type){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type || 'square';
+    osc.frequency.value = freq;
+    gain.gain.value = vol;
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e){}
+}
+const sfxBrick = () => beep(320, 0.06, 0.05);
+const sfxBrickTough = () => beep(220, 0.08, 0.06);
+const sfxWall = () => beep(150, 0.05, 0.04);
+const sfxPaddle = () => beep(260, 0.07, 0.06);
+const sfxPowerup = () => beep(520, 0.15, 0.08, 'triangle');
+const sfxLoseLife = () => beep(100, 0.3, 0.09);
+const sfxLaser = () => beep(700, 0.05, 0.04, 'sawtooth');
+const sfxLevelUp = () => { beep(440, 0.12, 0.08); setTimeout(()=>beep(660,0.15,0.08),120); };
+
+/* ---------------- setup ---------------- */
+function selectDiff(d){
+  difficulty = d;
+  document.querySelectorAll('#diffRow .opt-btn').forEach(b => b.classList.toggle('selected', b.dataset.diff === d));
+}
+
+function makePaddle(){
+  return { x: W/2 - BASE_PADDLE_W/2, w: BASE_PADDLE_W, h: PADDLE_H };
+}
+
+function makeBall(vx, vy){
+  return { x: paddle.x + paddle.w/2, y: PADDLE_Y - BALL_R - 1, r: BALL_R, vx: vx||0, vy: vy||0, stuck: vx===undefined };
+}
+
+function buildBricks(){
+  const s = DIFF_SETTINGS[difficulty];
+  const rows = Math.min(s.rows + Math.floor((level-1)/2), 8);
+  const arr = [];
+  for(let r=0; r<rows; r++){
+    for(let c=0; c<BRICK_COLS; c++){
+      // pattern: livelli superiori hanno buchi casuali per varietà, e mattoncini "tough" (2 colpi) nelle prime righe
+      const skip = level > 1 && Math.random() < 0.06;
+      if (skip) continue;
+      const tough = r < Math.min(2, rows) && Math.random() < 0.35;
+      arr.push({
+        x: BRICK_OFFSET_LEFT + c*(BRICK_W+BRICK_GAP),
+        y: BRICK_OFFSET_TOP + r*(BRICK_H+BRICK_GAP),
+        w: BRICK_W, h: BRICK_H,
+        color: ROW_COLORS[r % ROW_COLORS.length],
+        hp: tough ? 2 : 1,
+        alive: true
+      });
+    }
+  }
+  return arr;
+}
+
+function resetRound(fullReset){
+  paddle = makePaddle();
+  balls = [ makeBall() ];
+  powerups = [];
+  lasers = [];
+  trailPoints = [];
+  ballLaunched = false;
+  paddleWideUntil = 0; laserUntil = 0; slowUntil = 0;
+  if (fullReset){
+    score = 0; level = 1; lives = 3;
+    bricks = buildBricks();
+  }
+  updateHud();
+}
+
+function updateHud(){
+  document.getElementById('hudScore').textContent = score;
+  document.getElementById('hudLevel').textContent = level;
+  document.getElementById('hudLives').textContent = '●'.repeat(Math.max(0,lives)) + '○'.repeat(Math.max(0,3-lives) > 0 && lives < 3 ? 0 : 0);
+  // rappresentazione vite semplice: pallini pieni = vite rimanenti
+  document.getElementById('hudLives').textContent = '●'.repeat(Math.max(0,lives));
+}
+
+/* ---------------- input ---------------- */
+document.addEventListener('keydown', (e) => {
+  keys[e.key] = true;
+  if(e.key === ' '){
+    e.preventDefault();
+    if (!running) return;
+    if (paused){ togglePause(); return; }
+    if (balls.some(b => b.stuck)) launchBalls();
+    else fireLaser();
+  }
+  if(e.key.toLowerCase() === 'f'){
+    e.preventDefault();
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen().catch(()=>{});
+  }
+  if(e.key === 'p' || e.key === 'P'){ togglePause(); }
+});
+document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  mouseX = (e.clientX - rect.left) * (W / rect.width);
+});
+canvas.addEventListener('mousedown', () => {
+  if (!running || paused) return;
+  if (balls.some(b => b.stuck)) launchBalls();
+  else fireLaser();
+});
+
+function launchBalls(){
+  balls.forEach(b => {
+    if (b.stuck){
+      const s = DIFF_SETTINGS[difficulty];
+      const angle = -Math.PI/2 + (Math.random()*0.5 - 0.25);
+      b.vx = Math.cos(angle) * s.ballSpeed;
+      b.vy = Math.sin(angle) * s.ballSpeed;
+      b.stuck = false;
+    }
+  });
+  ballLaunched = true;
+}
+
+function fireLaser(){
+  if (Date.now() > laserUntil) return;
+  lasers.push({ x: paddle.x + 12, y: PADDLE_Y - 4 });
+  lasers.push({ x: paddle.x + paddle.w - 12, y: PADDLE_Y - 4 });
+  sfxLaser();
+}
+
+/* ---------------- game flow ---------------- */
+function startGame(){
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('winScreen').classList.add('hidden');
+  resetRound(true);
+  running = true; paused = false;
+  requestAnimationFrame(loop);
+}
+
+function backToMenu(){
+  running = false;
+  document.getElementById('winScreen').classList.add('hidden');
+  document.getElementById('startScreen').classList.remove('hidden');
+}
+
+function togglePause(){
+  if (!running) return;
+  paused = !paused;
+  document.getElementById('pauseScreen').classList.toggle('hidden', !paused);
+}
+
+let pendingLifeLoss = false;
+let pendingLevelUp = false;
+
+function loop(){
+  if (!running) return;
+  if (!paused && !pendingLifeLoss && !pendingLevelUp){
+    update();
+    draw();
+  }
+  requestAnimationFrame(loop);
+}
+
+function update(){
+  // paddle movement
+  const speed = 9;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) paddle.x -= speed;
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) paddle.x += speed;
+  if (mouseX !== null) paddle.x = mouseX - paddle.w/2;
+  paddle.x = Math.max(0, Math.min(W - paddle.w, paddle.x));
+
+  const wide = Date.now() < paddleWideUntil;
+  const targetW = wide ? BASE_PADDLE_W * 1.6 : BASE_PADDLE_W;
+  paddle.w += (targetW - paddle.w) * 0.15;
+
+  const slow = Date.now() < slowUntil;
+  const speedMul = slow ? 0.55 : 1;
+
+  // balls
+  balls.forEach(b => {
+    if (b.stuck){
+      b.x = paddle.x + paddle.w/2;
+      b.y = PADDLE_Y - b.r - 1;
+      return;
+    }
+    b.x += b.vx * speedMul;
+    b.y += b.vy * speedMul;
+
+    if (b.x - b.r < 0){ b.x = b.r; b.vx *= -1; sfxWall(); }
+    if (b.x + b.r > W){ b.x = W - b.r; b.vx *= -1; sfxWall(); }
+    if (b.y - b.r < 0){ b.y = b.r; b.vy *= -1; sfxWall(); }
+
+    // paddle collision
+    if (b.vy > 0 && b.y + b.r > PADDLE_Y && b.y + b.r < PADDLE_Y + PADDLE_H + 10
+        && b.x > paddle.x - b.r && b.x < paddle.x + paddle.w + b.r){
+      const relative = (b.x - (paddle.x + paddle.w/2)) / (paddle.w/2);
+      const bounceAngle = relative * (Math.PI/3);
+      const speedMag = Math.min(Math.hypot(b.vx,b.vy) * 1.02, 9.5);
+      b.vx = Math.sin(bounceAngle) * speedMag;
+      b.vy = -Math.abs(Math.cos(bounceAngle) * speedMag);
+      b.y = PADDLE_Y - b.r - 1;
+      sfxPaddle();
+    }
+
+    // brick collisions (semplice AABB, controlla solo mattoncini vivi)
+    for (const brick of bricks){
+      if (!brick.alive) continue;
+      if (b.x + b.r > brick.x && b.x - b.r < brick.x + brick.w &&
+          b.y + b.r > brick.y && b.y - b.r < brick.y + brick.h){
+        // determina lato di collisione approssimando col centro
+        const overlapX = Math.min(b.x + b.r - brick.x, brick.x + brick.w - (b.x - b.r));
+        const overlapY = Math.min(b.y + b.r - brick.y, brick.y + brick.h - (b.y - b.r));
+        if (overlapX < overlapY) b.vx *= -1; else b.vy *= -1;
+
+        brick.hp -= 1;
+        if (brick.hp <= 0){
+          brick.alive = false;
+          score += brick.color === COLORS.purple ? 30 : 10;
+          sfxBrick();
+          maybeDropPowerup(brick);
+        } else {
+          sfxBrickTough();
+        }
+        break;
+      }
+    }
+  });
+
+  // trail per la prima pallina (effetto visivo)
+  if (balls[0] && !balls[0].stuck){
+    trailPoints.push({x: balls[0].x, y: balls[0].y});
+    if (trailPoints.length > 8) trailPoints.shift();
+  }
+
+  // rimuovi palline cadute
+  balls = balls.filter(b => b.y - b.r < H + 40);
+  if (balls.length === 0){
+    triggerLifeLoss();
+    return;
+  }
+
+  // lasers
+  lasers.forEach(l => l.y -= 11);
+  lasers = lasers.filter(l => l.y > 0);
+  lasers.forEach(l => {
+    for (const brick of bricks){
+      if (!brick.alive) continue;
+      if (l.x > brick.x && l.x < brick.x + brick.w && l.y > brick.y && l.y < brick.y + brick.h){
+        brick.hp -= 1;
+        l.y = -100; // consuma il colpo
+        if (brick.hp <= 0){
+          brick.alive = false;
+          score += 10;
+          sfxBrick();
+          maybeDropPowerup(brick);
+        }
+        break;
+      }
+    }
+  });
+  lasers = lasers.filter(l => l.y > -50);
+
+  // powerups che cadono
+  powerups.forEach(p => p.y += 3.2);
+  powerups = powerups.filter(p => {
+    if (p.y > PADDLE_Y - 6 && p.y < PADDLE_Y + PADDLE_H && p.x > paddle.x && p.x < paddle.x + paddle.w){
+      applyPowerup(p.type);
+      return false;
+    }
+    return p.y < H + 20;
+  });
+  updateHud();
+
+  // livello completato?
+  if (bricks.every(b => !b.alive)){
+    triggerLevelUp();
+  }
+}
+
+function maybeDropPowerup(brick){
+  const s = DIFF_SETTINGS[difficulty];
+  if (Math.random() < s.dropChance){
+    const types = ['wide','multi','slow','life','laser'];
+    const type = types[Math.floor(Math.random()*types.length)];
+    powerups.push({ x: brick.x + brick.w/2, y: brick.y + brick.h/2, type });
+  }
+}
+
+const POWERUP_COLOR = { wide: COLORS.cyan, multi: COLORS.purple, slow: COLORS.orange, life: COLORS.green, laser: COLORS.pink };
+const POWERUP_LABEL = { wide: 'PADDLE +', multi: 'MULTI', slow: 'SLOW', life: '+VITA', laser: 'LASER' };
+
+function applyPowerup(type){
+  sfxPowerup();
+  if (type === 'wide') paddleWideUntil = Date.now() + 12000;
+  else if (type === 'slow') slowUntil = Date.now() + 9000;
+  else if (type === 'laser') laserUntil = Date.now() + 10000;
+  else if (type === 'life'){ lives = Math.min(lives+1, 5); updateHud(); }
+  else if (type === 'multi'){
+    const base = balls.find(b => !b.stuck) || balls[0];
+    if (base){
+      const speedMag = Math.max(Math.hypot(base.vx, base.vy), DIFF_SETTINGS[difficulty].ballSpeed);
+      [-0.35, 0.35].forEach(offset => {
+        const angle = Math.atan2(base.vy, base.vx) + offset;
+        balls.push({ x: base.x, y: base.y, r: BALL_R,
+          vx: Math.cos(angle)*speedMag, vy: Math.sin(angle)*speedMag, stuck:false });
+      });
+    }
+  }
+}
+
+function triggerLifeLoss(){
+  lives -= 1;
+  updateHud();
+  sfxLoseLife();
+  if (lives <= 0){
+    endGame(false);
+    return;
+  }
+  pendingLifeLoss = true;
+  document.getElementById('livesLeftText').textContent = `Vite rimaste: ${lives}`;
+  document.getElementById('loseLifeScreen').classList.remove('hidden');
+}
+
+function continueAfterLifeLoss(){
+  pendingLifeLoss = false;
+  document.getElementById('loseLifeScreen').classList.add('hidden');
+  paddle = makePaddle();
+  balls = [ makeBall() ];
+  lasers = [];
+  trailPoints = [];
+}
+
+function triggerLevelUp(){
+  pendingLevelUp = true;
+  level += 1;
+  sfxLevelUp();
+  document.getElementById('levelTitle').textContent = 'LIVELLO ' + level;
+  document.getElementById('levelText').textContent = level > 2
+    ? 'I mattoncini si infittiscono e la pallina accelera. Preparati.'
+    : 'Nuovo livello! Qualche mattoncino in più e un pizzico di velocità extra.';
+  document.getElementById('levelScreen').classList.remove('hidden');
+}
+
+function continueToNextLevel(){
+  pendingLevelUp = false;
+  document.getElementById('levelScreen').classList.add('hidden');
+  bricks = buildBricks();
+  paddle = makePaddle();
+  balls = [ makeBall() ];
+  powerups = []; lasers = []; trailPoints = [];
+}
+
+function endGame(won){
+  running = false;
+  document.getElementById('winTitle').textContent = won ? '🏆 HAI VINTO!' : 'GAME OVER';
+  document.getElementById('winText').textContent = `Punteggio finale: ${score} — livello raggiunto: ${level}`;
+  document.getElementById('winScreen').classList.remove('hidden');
+}
+
+/* ---------------- rendering ---------------- */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // sfondo griglia sottile
+  ctx.strokeStyle = 'rgba(77,252,255,0.05)';
+  ctx.lineWidth = 1;
+  for(let gx=0; gx<W; gx+=40){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+  for(let gy=0; gy<H; gy+=40){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+
+  // bricks
+  bricks.forEach(b => {
+    if (!b.alive) return;
+    ctx.fillStyle = b.color;
+    ctx.shadowColor = b.color; ctx.shadowBlur = b.hp > 1 ? 16 : 10;
+    ctx.globalAlpha = b.hp > 1 ? 1 : 0.85;
+    roundRectPath(b.x, b.y, b.w, b.h, 4);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    if (b.hp > 1){
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 1.5;
+      roundRectPath(b.x+2, b.y+2, b.w-4, b.h-4, 3);
+      ctx.stroke();
+    }
+  });
+  ctx.shadowBlur = 0;
+
+  // powerups
+  powerups.forEach(p => {
+    const color = POWERUP_COLOR[p.type];
+    ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 12;
+    roundRectPath(p.x-24, p.y-9, 48, 18, 5);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#05050a';
+    ctx.font = 'bold 9px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(POWERUP_LABEL[p.type], p.x, p.y+3);
+  });
+
+  // lasers
+  ctx.fillStyle = COLORS.pink;
+  ctx.shadowColor = COLORS.pink; ctx.shadowBlur = 10;
+  lasers.forEach(l => { ctx.fillRect(l.x-1.5, l.y-8, 3, 14); });
+  ctx.shadowBlur = 0;
+
+  // trail
+  trailPoints.forEach((t,i) => {
+    const alpha = (i/trailPoints.length) * 0.3;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, BALL_R * (i/trailPoints.length), 0, Math.PI*2);
+    ctx.fillStyle = `rgba(255,249,77,${alpha})`;
+    ctx.fill();
+  });
+
+  // balls
+  balls.forEach(b => {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.fillStyle = COLORS.yellow;
+    ctx.shadowColor = COLORS.yellow; ctx.shadowBlur = 16;
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+
+  // paddle
+  const wideActive = Date.now() < paddleWideUntil;
+  const laserActive = Date.now() < laserUntil;
+  const slowActive = Date.now() < slowUntil;
+  const paddleColor = laserActive ? COLORS.pink : (wideActive ? COLORS.cyan : COLORS.cyan);
+  ctx.fillStyle = paddleColor;
+  ctx.shadowColor = paddleColor; ctx.shadowBlur = 16;
+  roundRectPath(paddle.x, PADDLE_Y, paddle.w, paddle.h, 5);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // indicatori power-up attivi
+  ctx.textAlign = 'left';
+  ctx.font = '11px "Courier New", monospace';
+  let ix = 14, iy = H - 12;
+  if (wideActive){ ctx.fillStyle = COLORS.cyan; ctx.fillText('◆ PADDLE+', ix, iy); ix += 90; }
+  if (laserActive){ ctx.fillStyle = COLORS.pink; ctx.fillText('◆ LASER', ix, iy); ix += 75; }
+  if (slowActive){ ctx.fillStyle = COLORS.orange; ctx.fillText('◆ SLOW', ix, iy); }
+
+  // suggerimento lancio
+  if (balls.some(b=>b.stuck) && running && !paused){
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '13px "Courier New", monospace';
+    ctx.fillText('SPAZIO o CLICK per lanciare', W/2, PADDLE_Y - 30);
+  }
+}
+
+function roundRectPath(x,y,w,h,r){
+  ctx.beginPath();
+  if (ctx.roundRect) { ctx.roundRect(x,y,w,h,r); return; }
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+}
+
+/* stato iniziale (idle draw prima di iniziare) */
+resetRound(true);
+draw();
+</script>
+
+</body>
+</html>
