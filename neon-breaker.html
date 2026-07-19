@@ -11,7 +11,7 @@
   // browser: se sono diversi (cioè il file è stato aggiornato), forziamo un
   // ricaricamento che bypassa la cache aggiungendo un parametro univoco all'URL.
   // AGGIORNA QUESTO NUMERO OGNI VOLTA CHE RICARICHI UNA NUOVA VERSIONE ONLINE:
-  const PAGE_VERSION = 'v2';
+  const PAGE_VERSION = 'v3';
   (function(){
     try {
       const stored = sessionStorage.getItem('neonBreakerVersion');
@@ -190,6 +190,7 @@ let running = false;
 let paused = false;
 let keys = {};
 let mouseX = null;
+let lastMouseMoveTime = 0;
 
 const PADDLE_Y = H - 34;
 const PADDLE_H = 14;
@@ -321,6 +322,7 @@ document.addEventListener('keyup', (e) => { keys[e.key] = false; });
 canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect();
   mouseX = (e.clientX - rect.left) * (W / rect.width);
+  lastMouseMoveTime = Date.now();
 });
 canvas.addEventListener('mousedown', () => {
   if (!running || paused) return;
@@ -350,6 +352,7 @@ function fireLaser(){
 
 /* ---------------- game flow ---------------- */
 function startGame(){
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   document.getElementById('startScreen').classList.add('hidden');
   document.getElementById('winScreen').classList.add('hidden');
   resetRound(true);
@@ -386,10 +389,11 @@ function update(){
   const speed = 9;
   const leftKey = keys['ArrowLeft'] || keys['a'] || keys['A'];
   const rightKey = keys['ArrowRight'] || keys['d'] || keys['D'];
+  const mouseRecentlyMoved = mouseX !== null && (Date.now() - lastMouseMoveTime) < 120;
   if (leftKey || rightKey){
     if (leftKey) paddle.x -= speed;
     if (rightKey) paddle.x += speed;
-  } else if (mouseX !== null){
+  } else if (mouseRecentlyMoved){
     paddle.x = mouseX - paddle.w/2;
   }
   paddle.x = Math.max(0, Math.min(W - paddle.w, paddle.x));
